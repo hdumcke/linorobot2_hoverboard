@@ -23,10 +23,10 @@ grep -q "horo" /etc/hosts || echo "127.0.0.1     horo" | sudo tee -a /etc/hosts
 echo 'debconf debconf/frontend select Noninteractive' | sudo debconf-set-selections
 sudo apt update
 sudo apt -y upgrade
-sudo apt-get -y install g++ dpkg-dev curl python-is-python3 mpg321 python3-tk openssh-server
+sudo apt-get -y install g++ dpkg-dev curl python-is-python3
 
 ### Install hoverboard proxy
-cd ~/hoverboard_proxy
+cd $BASEDIR/hoverboard_proxy
 ./install.sh
 
 ### Install pip
@@ -55,6 +55,7 @@ touch src/linorobot2/linorobot2_bringup/AMENT_IGNORE
 touch src/linorobot2/linorobot2_description/AMENT_IGNORE
 touch src/linorobot2_hoverboard_gazebo/AMENT_IGNORE
 rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys microxrcedds_agent --skip-keys micro_ros_agent
+sudo pip install setuptools==58.2.0 # suppress colcon build warning
 colcon build
 
 ### Enable bluetooth for joystick
