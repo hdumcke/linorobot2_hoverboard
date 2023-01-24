@@ -26,7 +26,7 @@ class HoverboardInterface:
 
     def set_speed(self, speed, steer):
         try:
-            self.sock.sendall(pack("BBHH", 6, 1, *speed, *steer))
+            self.sock.sendall(pack("BBHH", 6, 1, speed, steer))
             data = self.sock.recv(2)
         except Exception as e:
             if e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF:

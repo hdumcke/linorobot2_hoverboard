@@ -352,7 +352,7 @@ int main(int argc, char *argv[])
                 /* Handle commands. */
 		int offset;
                 offset = 0;
-                if(r_buffer[1] == INST_SETSPEED && r_buffer[0] == 38) {
+                if(r_buffer[1] == INST_SETSPEED && r_buffer[0] == 6) {
                     memcpy((char*)control_block + offset, &r_buffer[2], sizeof(parameters_control_instruction_format));
                     s_buffer[0]= 2;
                     s_buffer[1]= INST_SETSPEED;
