@@ -1,0 +1,11 @@
+[Unit]
+Description=hoverboard proxy service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/var/lib/hoverboard/hoverboard-proxy
+User=ubuntu
+
+[Install]
+WantedBy=sysinit.target
