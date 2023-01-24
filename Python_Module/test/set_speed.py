@@ -7,5 +7,5 @@ if len(sys.argv) != 3:
     print("usage: %s <speep> <steer>" % sys.argv[0])
     sys.exit(1)
 
-cd = HoverboardInterface()
-cd.set_speed(int(sys.argv[1]), int(sys.argv[2]))
+ct = HoverboardInterface()
+ct.set_speed(int(sys.argv[1]), int(sys.argv[2]))

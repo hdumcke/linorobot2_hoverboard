@@ -15,8 +15,8 @@ tmp=$(ps aux | grep unattended-upgrade | grep -v unattended-upgrade-shutdown | g
 done
 
 ### Give a meaningfull hostname
-grep -q "hover_robot" /etc/hostname || echo "hover_robot" | sudo tee /etc/hostname
-grep -q "hover_robot" /etc/hosts || echo "127.0.0.1     hover_robot" | sudo tee -a /etc/hosts
+grep -q "horo" /etc/hostname || echo "horo" | sudo tee /etc/hostname
+grep -q "horo" /etc/hosts || echo "127.0.0.1     horo" | sudo tee -a /etc/hosts
 
 
 ### upgrade Ubuntu and install required packages
@@ -38,3 +38,26 @@ sudo python get-pip.py
 sudo apt install -y python3-dev
 sudo git config --global --add safe.directory $BASEDIR # temporary fix https://bugs.launchpad.net/devstack/+bug/1968798
 sudo pip install $BASEDIR/Python_Module
+
+
+### Install ROS2
+[ -d "$HOME/ros2_setup_scripts_ubuntu/" ] || $BASEDIR/setup_ros2.sh
+
+sudo apt install -y python3-rosdep2
+source /opt/ros/humble/setup.bash
+mkdir -p ~/linorobot2_ws/src
+cd ~/linorobot2_ws
+cp -r $BASEDIR/ros2/* src/
+git clone -b $ROS_DISTRO https://github.com/linorobot/linorobot2 src/linorobot2
+touch src/linorobot2/linorobot2_gazebo/AMENT_IGNORE
+touch src/linorobot2/linorobot2_navigation/AMENT_IGNORE
+touch src/linorobot2/linorobot2_bringup/AMENT_IGNORE
+touch src/linorobot2/linorobot2_description/AMENT_IGNORE
+touch src/linorobot2_hoverboard_gazebo/AMENT_IGNORE
+rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys microxrcedds_agent --skip-keys micro_ros_agent
+colcon build
+
+### Enable bluetooth for joystick
+#sudo apt-get -y install joystick
+#sudo systemctl enable bluetooth
+#sudo adduser $USER bluetooth
