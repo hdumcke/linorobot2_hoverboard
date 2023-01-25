@@ -219,4 +219,4 @@ scaledSteer *= expo
 
 steerAngle = map(scaledSteer, -1000, 1000, 180, 0)
 xScale = lookUpTableAngle[int(steerAngle)]
-print("%s %s %s %s" % (scaledSpeed, scaledSteer, steerAngle, xScale))
+print("scaledSpeed: %s expo %s scaledSteer %s steerAngle %s xScale %s" % (scaledSpeed, expo, scaledSteer, steerAngle, xScale))

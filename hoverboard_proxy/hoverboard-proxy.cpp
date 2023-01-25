@@ -17,7 +17,7 @@
 static bool const print_debug     {false};
 static bool const print_debug_max {false};
 
-static char const * filename {"/dev/ttyAMA0"};
+static char const * filename {"/dev/ttyAMA1"};
 
 // Setpoint and feedback data format for client-server communication (PoD)
 struct setpoint_and_feedback_data

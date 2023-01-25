@@ -58,7 +58,14 @@ rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys micr
 sudo pip install setuptools==58.2.0 # suppress colcon build warning
 colcon build
 
+### Enable UART3
+### TXD3 = Pin 7, RXD3 = Pin 29
+sudo sed -i "s/console=serial0,115200 //" /boot/firmware/cmdline.txt
+grep -q "uart3" /boot/firmware/config.txt || echo "dtoverlay=uart3" | sudo tee -a /boot/firmware/config.txt
+
 ### Enable bluetooth for joystick
 #sudo apt-get -y install joystick
 #sudo systemctl enable bluetooth
 #sudo adduser $USER bluetooth
+
+sudo reboot
