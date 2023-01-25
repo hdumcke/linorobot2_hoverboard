@@ -29,6 +29,10 @@ def generate_launch_description():
         [FindPackageShare('linorobot2_hoverboard_control'), 'launch', 'linorobot2_hoverboard_interface.launch.py']
     )
 
+    lidar_launch_path = PathJoinSubstitution(
+        [FindPackageShare('ldlidar'), 'launch', 'ldlidar.launch.py']
+    )
+
     joy_launch_path = PathJoinSubstitution(
         [FindPackageShare('linorobot2_hoverboard_bringup'), 'launch', 'joy_teleop.launch.py']
     )
@@ -61,6 +65,10 @@ def generate_launch_description():
 
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(hoverboard_launch_path),
+        ),
+
+        IncludeLaunchDescription(
+            PythonLaunchDescriptionSource(lidar_launch_path),
         ),
 
         IncludeLaunchDescription(

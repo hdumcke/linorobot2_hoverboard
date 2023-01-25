@@ -49,6 +49,7 @@ mkdir -p ~/linorobot2_ws/src
 cd ~/linorobot2_ws
 cp -r $BASEDIR/ros2/* src/
 git clone -b $ROS_DISTRO https://github.com/linorobot/linorobot2 src/linorobot2
+git clone -b ros2 https://github.com/linorobot/ldlidar.git src/ldlidar
 touch src/linorobot2/linorobot2_gazebo/AMENT_IGNORE
 touch src/linorobot2/linorobot2_navigation/AMENT_IGNORE
 touch src/linorobot2/linorobot2_bringup/AMENT_IGNORE
@@ -58,14 +59,22 @@ rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys micr
 sudo pip install setuptools==58.2.0 # suppress colcon build warning
 colcon build
 
+### install Oak-D
+echo 'SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", MODE="0666"' | sudo tee /etc/udev/rules.d/80-movidius.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
+sudo apt install -y ros-humble-depthai-ros
+
 ### Enable UART3
 ### TXD3 = Pin 7, RXD3 = Pin 29
 sudo sed -i "s/console=serial0,115200 //" /boot/firmware/cmdline.txt
 grep -q "uart3" /boot/firmware/config.txt || echo "dtoverlay=uart3" | sudo tee -a /boot/firmware/config.txt
 
-### Enable bluetooth for joystick
-#sudo apt-get -y install joystick
-#sudo systemctl enable bluetooth
-#sudo adduser $USER bluetooth
+# install service
+cd ~
+sudo cp $BASEDIR/robot.service /etc/systemd/system/
+sudo mkdir -p /var/lib/horo/
+sudo cp $BASEDIR/run.sh /var/lib/horo/
+sudo systemctl daemon-reload
+sudo systemctl enable robot
 
 sudo reboot
