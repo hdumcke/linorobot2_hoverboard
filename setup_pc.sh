@@ -15,3 +15,8 @@ rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys micr
 colcon build
 
 sudo apt-get -y install ros-humble-teleop-twist-keyboard
+
+### install Oak-D
+echo 'SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", MODE="0666"' | sudo tee /etc/udev/rules.d/80-movidius.rules
+sudo udevadm control --reload-rules && sudo udevadm trigger
+sudo apt install -y ros-humble-depthai-ros
