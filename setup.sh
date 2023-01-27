@@ -58,11 +58,6 @@ rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys micr
 sudo pip install setuptools==58.2.0 # suppress colcon build warning
 colcon build
 
-### install Oak-D
-echo 'SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", MODE="0666"' | sudo tee /etc/udev/rules.d/80-movidius.rules
-sudo udevadm control --reload-rules && sudo udevadm trigger
-sudo apt install -y ros-humble-depthai-ros
-
 ### Enable UART3
 ### TXD3 = Pin 7, RXD3 = Pin 29
 sudo sed -i "s/console=serial0,115200 //" /boot/firmware/cmdline.txt
@@ -76,10 +71,16 @@ sudo cp $BASEDIR/run.sh /var/lib/horo/
 sudo systemctl daemon-reload
 sudo systemctl enable robot
 
+# install OAK-D-LITE
+sudo cp $BASEDIR/oak-d-lite/oak-d-lite.service /etc/systemd/system/
+sudo cp $BASEDIR/oak-d-lite/oak-d-lite.sh /var/lib/horo/
+sudo systemctl enable oak-d-lite
+$BASEDIR/oak-d-lite/ros_install.sh
+
 # install imu
 sudo cp $BASEDIR/imu/imu.service /etc/systemd/system/
 sudo cp $BASEDIR/imu/imu.sh /var/lib/horo/
 sudo systemctl enable imu
-$BASEDIR/imu/imu_ros_install.sh
+$BASEDIR/imu/ros_install.sh
 
 sudo reboot

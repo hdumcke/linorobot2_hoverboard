@@ -1,0 +1,12 @@
+[Unit]
+Description=IMU service
+After=robot.target
+
+[Service]
+User=ubuntu
+ExecStart=/bin/bash --login -c 'source /home/ubuntu/.bashrc; /var/lib/horo/oak-d-lite.sh'
+KillSignal=2
+TimeoutStopSec=10
+
+[Install]
+WantedBy=multi-user.target
