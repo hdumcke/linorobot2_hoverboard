@@ -51,7 +51,6 @@ cp -r $BASEDIR/ros2/* src/
 git clone -b $ROS_DISTRO https://github.com/linorobot/linorobot2 src/linorobot2
 git clone -b ros2 https://github.com/linorobot/ldlidar.git src/ldlidar
 touch src/linorobot2/linorobot2_gazebo/AMENT_IGNORE
-touch src/linorobot2/linorobot2_navigation/AMENT_IGNORE
 touch src/linorobot2/linorobot2_bringup/AMENT_IGNORE
 touch src/linorobot2/linorobot2_description/AMENT_IGNORE
 touch src/linorobot2_hoverboard_gazebo/AMENT_IGNORE
@@ -76,5 +75,11 @@ sudo mkdir -p /var/lib/horo/
 sudo cp $BASEDIR/run.sh /var/lib/horo/
 sudo systemctl daemon-reload
 sudo systemctl enable robot
+
+# install imu
+sudo cp $BASEDIR/imu/imu.service /etc/systemd/system/
+sudo cp $BASEDIR/imu/imu.sh /var/lib/horo/
+$BASEDIR/imu/imu_ros_install.sh
+sudo systemctl enable imu
 
 sudo reboot
