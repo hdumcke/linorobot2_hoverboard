@@ -79,7 +79,7 @@ sudo systemctl enable robot
 # install imu
 sudo cp $BASEDIR/imu/imu.service /etc/systemd/system/
 sudo cp $BASEDIR/imu/imu.sh /var/lib/horo/
-$BASEDIR/imu/imu_ros_install.sh
 sudo systemctl enable imu
+$BASEDIR/imu/imu_ros_install.sh
 
 sudo reboot
