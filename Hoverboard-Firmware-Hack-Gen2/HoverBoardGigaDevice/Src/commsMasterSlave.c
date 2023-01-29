@@ -64,7 +64,6 @@ int16_t currentDCMaster = 0;
 int16_t batteryMaster = 0;
 int16_t realSpeedMaster = 0;	
 
-int16_t pwmSlaveControl = 0;
 int16_t pwmSlave = 0;
 
 uint8_t slaveSendIdentifier = 0;
@@ -173,7 +172,7 @@ void CheckUSARTMasterSlaveInput(uint8_t USARTBuffer[])
 #endif
 #ifdef SLAVE
 	// Calculate result pwm value -1000 to 1000
-	pwmSlaveControl = (int16_t)((USARTBuffer[1] << 8) | USARTBuffer[2]);
+	pwmSlave = (int16_t)((USARTBuffer[1] << 8) | USARTBuffer[2]);
 	
 	// Get identifier
 	identifier = USARTBuffer[3];
@@ -214,21 +213,6 @@ void CheckUSARTMasterSlaveInput(uint8_t USARTBuffer[])
 	gpio_bit_write(LED_GREEN_PORT, LED_GREEN, chargeStateLowActive == SET ? SET : RESET);
 	gpio_bit_write(LED_RED_PORT, LED_RED, chargeStateLowActive == RESET ? SET : RESET);
 	SetEnable(enable);
-	
-	switch (dir)
-	{
-		case 1:
-			temp_realSpeed = -realSpeed;
-			break;
-		case 2:
-			temp_realSpeed = realSpeed;
-			break;
-		default:
-			temp_realSpeed = 0;
-		break;			
-	}
-	
-	pwmSlave = CalculatePIDPWM(temp_realSpeed, pwmSlaveControl);
 	SetPWM(pwmSlave);
 	CheckGeneralValue(identifier, value);
 	

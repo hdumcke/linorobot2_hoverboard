@@ -29,13 +29,6 @@
 */
 
 #include "gd32f1x0.h"
-#include "../Inc/defines.h"
-
-float kp = 0.07;
-float ki = 0.05;
-float kd = 0.03;
-float previousError = 0;
-float errorSum = 0;
 
 //----------------------------------------------------------------------------
 // Send buffer via USART
@@ -76,21 +69,4 @@ uint16_t CalcCRC(uint8_t *ptr, int count)
     } while(--i);
   }
   return (crc);
-}
-
-int16_t CalculatePIDPWM(float realSpeed, int16_t pwmControl) 
-{
-	float error;
-	float output;		
-	//if (pwmControl < 50 && pwmControl > -50) return 0;
-	if ((realSpeed < 0.1 || realSpeed > -0.1) && pwmControl == 0) errorSum = 0;
-	error = pwmControl - (realSpeed*100);
-	output = error*kp + errorSum*ki + (error-previousError)*kd;
-	previousError = error;
-	errorSum += error;
-	if (errorSum > 20000) errorSum = 20000;
-	if (errorSum < -20000) errorSum = -20000;
-	if (output > 1000) output = 1000;
-	if (output < -1000) output = -1000; 
-	return (int16_t) output;
 }

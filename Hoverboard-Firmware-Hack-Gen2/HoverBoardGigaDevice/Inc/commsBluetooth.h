@@ -42,8 +42,6 @@
 //----------------------------------------------------------------------------
 void UpdateUSARTBluetoothInput(void);
 
-void SendBluetoothDevice(void);
-
 #endif
 
 #endif

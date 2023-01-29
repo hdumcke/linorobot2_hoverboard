@@ -43,11 +43,10 @@
 // Variables which will be send over bluetooth
 extern float currentDC;
 extern float realSpeed;
-//extern uint8_t dir;
 
 extern uint32_t hornCounter_ms;
 
-#define USART_BLUETOOTH_TX_BYTES 12  // Transmit byte count including start '/' and stop character '\n'
+#define USART_BLUETOOTH_TX_BYTES 11   // Transmit byte count including start '/' and stop character '\n'
 #define USART_BLUETOOTH_RX_BYTES 11   // Receive byte count including start '/' and stop character '\n'
 
 extern uint8_t usartSteer_COM_rx_buf[USART_STEER_COM_RX_BUFFERSIZE];
@@ -56,6 +55,7 @@ static uint8_t sUSARTBluetoothRecordBuffer[USART_BLUETOOTH_RX_BYTES];
 static uint8_t sUSARTBluetoothRecordBufferCounter = 0;
 
 void CheckUSARTBluetoothInput(uint8_t USARTBuffer[]);
+void SendBluetoothDevice(uint8_t identifier, int16_t value);
 
 //----------------------------------------------------------------------------
 // Update USART bluetooth input
@@ -184,16 +184,17 @@ void CheckUSARTBluetoothInput(uint8_t USARTBuffer[])
 				value = GetSpeedStrobe();
 				break;
 		}
-		//SendBluetoothDevice();
+		
 		// Send Answer
+		SendBluetoothDevice(identifier, value);
 	}
 	// If write mode, get result value
 	else if ( readWrite == 1)
 	{
 		// Calculate result value (-10000 to 10000)
 		sign = USARTBuffer[4] == '-' ? -1 : 1;
-		//digit1 = (USARTBuffer[5] - '0') * 10000;
-		//digit2 = (USARTBuffer[6] - '0') * 1000;
+		digit1 = (USARTBuffer[5] - '0') * 10000;
+		digit2 = (USARTBuffer[6] - '0') * 1000;
 		digit3 = (USARTBuffer[7] - '0') * 100;
 		digit4 = (USARTBuffer[8] - '0') * 10;
 		digit5 = (USARTBuffer[9] - '0');
@@ -251,32 +252,28 @@ void CheckUSARTBluetoothInput(uint8_t USARTBuffer[])
 //----------------------------------------------------------------------------
 // Send frame to bluetooth device
 //----------------------------------------------------------------------------
-void SendBluetoothDevice()
+void SendBluetoothDevice(uint8_t identifier, int16_t value)
 {
 	int index = 0;
+	char charVal[5];
 	uint8_t buffer[USART_BLUETOOTH_TX_BYTES];
-	uint16_t crc;
-	FLOATUNION_t current;
-	FLOATUNION_t speed;
-	current.number = currentDC*100;
-	speed.number = realSpeed*100;
 	
 	// Send bluetooth frame
 	buffer[index++] = '/';
-	buffer[index++] = current.bytes[3];
-	buffer[index++] = current.bytes[2];
-	buffer[index++] = current.bytes[1];
-	buffer[index++] = current.bytes[0];
-	buffer[index++] = speed.bytes[3];
-	buffer[index++] = speed.bytes[2];
-	buffer[index++] = speed.bytes[1];
-	buffer[index++] = speed.bytes[0];
-	crc = CalcCRC(buffer, index);
-  buffer[index++] = (crc >> 8) & 0xFF;
-  buffer[index++] = crc & 0xFF;
+	sprintf(charVal, "%02d", identifier);
+	buffer[index++] = charVal[0];
+	buffer[index++] = charVal[1];
+	buffer[index++] = '0';
+	sprintf(charVal, "%05d", value);
+	buffer[index++] = value < 0 ? '-' : '+';
+	buffer[index++] = charVal[0];
+	buffer[index++] = charVal[1];
+	buffer[index++] = charVal[2];
+	buffer[index++] = charVal[3];
+	buffer[index++] = charVal[4];
 	buffer[index++] = '\n';
 	
-	SendBuffer(USART_STEER_COM, buffer, USART_BLUETOOTH_TX_BYTES);
+	SendBuffer(USART_STEER_COM, buffer, index);
 }
 
 #endif
