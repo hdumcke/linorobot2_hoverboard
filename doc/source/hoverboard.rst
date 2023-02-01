@@ -1,4 +1,4 @@
-Hoverbaord
+Hoverboard
 =========
 
 We will leverage the work done and documented in the following projects:

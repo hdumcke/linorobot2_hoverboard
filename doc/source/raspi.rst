@@ -18,7 +18,7 @@ ROS
 Installation
 ------------
 
-To simplify the installation of the Raspberry Pi we provide a cloid-init based installation procedure.
+To simplify the installation of the Raspberry Pi we provide a cloud-init based installation procedure.
 
 Prepare a SD card with Ubuntu 22.04
 
@@ -30,6 +30,6 @@ Clone https://github.com/hdumcke/linorobot2_hoverboard on the PC where you have 
 
 prepare_sd.py
 
-And answer the questions. At the end eject your SD card, stick it into the Raspberry Pi and boot. At the end the Raspberry Pi will reboot and you should have a complete installation.
+And answer the questions. When done, eject your SD card, stick it into the Raspberry Pi and boot. At the end the Raspberry Pi will reboot and you should have a complete installation.
 
 During installation the output of the setup script will be written to ~/.setup_err.log and ~/.setup_out.log These file can be used to monitor the installation process 
