@@ -61,8 +61,8 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
     if(control_block==NULL) exit(EXIT_FAILURE);
     
     // Initialize all control/speed and steer to 0
-    control_block->control.speed = 0;
-    control_block->control.steer = 0;
+    control_block->control.leftSpeed = 0;
+    control_block->control.rightSpeed = 0;
 
     // reference : https://www.pololu.com/docs/0J73/15.5
 
@@ -157,10 +157,10 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
             0x2F,               // header '/'
         };
 
-	tx_buffer[1] = (control_block->control.speed >> 8) & 0xFF;
-	tx_buffer[2] = control_block->control.speed & 0xFF;
-	tx_buffer[3] = (control_block->control.steer >> 8) & 0xFF;
-	tx_buffer[4] = control_block->control.steer & 0xFF;
+	tx_buffer[1] = (control_block->control.leftSpeed >> 8) & 0xFF;
+	tx_buffer[2] = control_block->control.leftSpeed & 0xFF;
+	tx_buffer[3] = (control_block->control.rightSpeed >> 8) & 0xFF;
+	tx_buffer[4] = control_block->control.rightSpeed & 0xFF;
 
         // Checksum
 	u16 crc = CalcCRC(tx_buffer, tx_buffer_size - 3);
@@ -210,10 +210,13 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
     	// If we do not get data within 1 second we assume Hoverboard stopped sending and we send again
         size_t const rx_buffer_size { 128 };
         u8 rx_buffer[rx_buffer_size] {0};
-    	size_t const expected_lenght {2}; // '/\n'
+    	size_t const expected_lenght {4 + sizeof(parameters_control_acknowledge_format)}; // '/<data><crc>\n'
         size_t received_length {0};
+        size_t bytes_to_read {1};
     	while(received_length<expected_lenght)
         {
+	    bytes_to_read = received_length>0 ? expected_lenght-received_length : 1;
+	    
             ssize_t read_length = read(
                 fd,
                 (char*)(rx_buffer+received_length),
@@ -225,6 +228,15 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
                 close(fd);
                 exit(EXIT_FAILURE);
             }
+	    // start reading at beginning of frame
+	    if(rx_buffer[0]!=0x2F)
+	    {
+                if (print_debug_max)
+		{
+		    printf("ignoring 0x%.1X\n", rx_buffer[0]);
+		}
+		continue;
+	    }
             if (print_debug_max)
             {
                 printf("uart read:%lu, waiting for %lu/%lu\n",read_length, received_length,expected_lenght);
@@ -236,6 +248,10 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
             }
     	    received_length += read_length;
     	}
+        if (print_debug_max)
+        {
+            printf("uart read: %lu/%lu\n",received_length,expected_lenght);
+        }
 
         // not enough data received ?
     	if(received_length<expected_lenght) continue;
@@ -244,9 +260,38 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
          * Decode a CONTROL ACK frame
          */
 
+        if (print_debug)
+        {
+            printf("0x%.1X\n", rx_buffer[0]);
+            printf("0x%.1X\n", rx_buffer[1]);
+            printf("0x%.1X\n", rx_buffer[2]);
+            printf("0x%.1X\n", rx_buffer[3]);
+            printf("0x%.1X\n", rx_buffer[4]);
+            printf("0x%.1X\n", rx_buffer[5]);
+            printf("0x%.1X\n", rx_buffer[6]);
+            printf("0x%.1X\n", rx_buffer[7]);
+            printf("0x%.1X\n", rx_buffer[8]);
+            printf("0x%.1X\n", rx_buffer[9]);
+            printf("0x%.1X\n", rx_buffer[10]);
+            printf("0x%.1X\n", rx_buffer[11]);
+            printf("0x%.1X\n", rx_buffer[12]);
+            printf("0x%.1X\n", rx_buffer[13]);
+            printf("0x%.1X\n", rx_buffer[14]);
+            printf("0x%.1X\n", rx_buffer[15]);
+            printf("0x%.1X\n", rx_buffer[16]);
+            printf("0x%.1X\n", rx_buffer[17]);
+            printf("0x%.1X\n", rx_buffer[18]);
+            printf("0x%.1X\n", rx_buffer[19]);
+            printf("0x%.1X\n", rx_buffer[20]);
+            printf("0x%.1X\n", rx_buffer[21]);
+            printf("0x%.1X\n", rx_buffer[22]);
+            printf("0x%.1X\n", rx_buffer[23]);
+            printf("----------\n");
+        }
+
         bool const rx_header_check {
                     (rx_buffer[0]==0x2F)
-                &&  (rx_buffer[1]==0x0A)
+                &&  (rx_buffer[expected_lenght-1]==0x0A)
         };
         if(!rx_header_check)
         {
@@ -258,6 +303,37 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
             // next
             continue;
         }
+
+	crc = CalcCRC(rx_buffer, expected_lenght - 3);
+	if ( rx_buffer[expected_lenght - 3] != ((crc >> 8) & 0xFF) ||
+                rx_buffer[expected_lenght - 2] != (crc & 0xFF))
+        {
+            // log
+            if (print_debug)
+    	    {
+                printf("RX cecksum error : [received: 0x%.1X 0x%.1X,expected: 0x%.1X 0x%.1X!\n",
+		       	rx_buffer[expected_lenght - 3],
+		       	rx_buffer[expected_lenght - 2],
+		       	(crc >> 8) & 0xFF,
+		       	crc & 0xFF);
+    	    }
+            // next
+            continue;
+        }
+
+        // decode parameters
+        memcpy(&control_block->feedback,rx_buffer+1,sizeof(parameters_control_acknowledge_format));
+
+        // log
+        if (print_debug)
+        {
+            printf("battery: %.2f\n", control_block->feedback.battery);
+            printf("currentMaster: %.2f\n", control_block->feedback.currentMaster);
+            printf("speedMaster: %.2f\n", control_block->feedback.speedMaster);
+            printf("currentSlave: %.2f\n", control_block->feedback.currentSlave);
+            printf("speedSlave: %.2f\n", control_block->feedback.speedSlave);
+	}
+
 
     }
 }
@@ -356,6 +432,29 @@ int main(int argc, char *argv[])
                     memcpy((char*)control_block + offset, &r_buffer[2], sizeof(parameters_control_instruction_format));
                     s_buffer[0]= 2;
                     s_buffer[1]= INST_SETSPEED;
+                }
+
+		offset = sizeof(parameters_control_instruction_format);
+                if(r_buffer[1] == INST_GETBATT && r_buffer[0] == 2) {
+                    s_buffer[0]= 2 + sizeof(float);
+                    s_buffer[1]= INST_GETBATT;
+                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(float));
+                }
+
+		offset += 4;
+                if(r_buffer[1] == INST_GETCURR && r_buffer[0] == 2) {
+                    s_buffer[0]= 2 + 2*sizeof(float);
+                    s_buffer[1]= INST_GETCURR;
+                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(float));
+                    memcpy(&s_buffer[6], (char*)control_block + offset +6, sizeof(float));
+                }
+
+		offset += 4;
+                if(r_buffer[1] == INST_GETSPEED && r_buffer[0] == 2) {
+                    s_buffer[0]= 2 + 2*sizeof(float);
+                    s_buffer[1]= INST_GETSPEED;
+                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(float));
+                    memcpy(&s_buffer[6], (char*)control_block + offset +6, sizeof(float));
                 }
 
                 /* Send result. */

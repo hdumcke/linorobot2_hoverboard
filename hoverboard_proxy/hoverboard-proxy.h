@@ -18,16 +18,23 @@ typedef long s32;
 // frame parameters format for control instruction
 struct parameters_control_instruction_format
 {
-    u16 speed;
-    u16 steer;
+    s16 leftSpeed;
+    s16 rightSpeed;
 };
 
 // frame parameters format for control acknowledge
 struct parameters_control_acknowledge_format
 {
-    u16 dummy;
+    float battery;
+    float currentMaster;
+    float speedMaster;
+    float currentSlave;
+    float speedSlave;
 };
 
 #define INST_SETSPEED 0x01
+#define INST_GETBATT 0x02
+#define INST_GETCURR 0x03
+#define INST_GETSPEED 0x04
 
 #endif //_esp32_proxy__H
