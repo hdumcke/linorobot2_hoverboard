@@ -5,9 +5,9 @@ import os
 
 ##############################################################
 #
-# Ask questions to prepare cloud-init file for linorobot2 hoverboard
+# Ask questions to prepare cloud-init file for horo
 #
-# if ~/.linorobot2_hoverboard_sd.txt exists no questions will be asked
+# if ~/.hora_sd.txt exists no questions will be asked
 #
 ##############################################################
 
@@ -45,7 +45,7 @@ parser.add_argument('-c', '--cache',
                     help='Cache my responses')
 args = parser.parse_args()
 
-conf_file = os.path.join(os.path.expanduser("~"), '.linorobot2_hoverboard_sd.txt')
+conf_file = os.path.join(os.path.expanduser("~"), '.horo_sd.txt')
 if os.path.exists(conf_file):
     with open(conf_file, 'r') as fh:
         lines = fh.readlines()
@@ -98,8 +98,8 @@ chpasswd:
 packages:
 - git
 runcmd:
-- [ su, ubuntu, -c, "git clone https://github.com/hdumcke/linorobot2_hoverboard.git /home/ubuntu/linorobot2_hoverboard" ]
-- [ su, ubuntu, -c, "/home/ubuntu/linorobot2_hoverboard/%s 2> /home/ubuntu/.setup_err.log > /home/ubuntu/.setup_out.log" ]
+- [ su, ubuntu, -c, "git clone https://github.com/hdumcke/linorobot2_hoverboard.git /home/ubuntu/horo" ]
+- [ su, ubuntu, -c, "/home/ubuntu/horo/%s 2> /home/ubuntu/.setup_err.log > /home/ubuntu/.setup_out.log" ]
 - [ reboot ]
 """
 

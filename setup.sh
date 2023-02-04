@@ -44,16 +44,14 @@ sudo pip install $BASEDIR/Python_Module
 [ -d "$HOME/ros2_setup_scripts_ubuntu/" ] || $BASEDIR/setup_ros2.sh
 
 sudo apt install -y python3-rosdep2
+sudo apt install -y ros-humble-ros2-control
+sudo apt install -y ros-humble-ros2-controllers
 source /opt/ros/humble/setup.bash
-mkdir -p ~/linorobot2_ws/src
-cd ~/linorobot2_ws
+mkdir -p ~/horo_ws/src
+cd ~/horo_ws
 cp -r $BASEDIR/ros2/* src/
-git clone -b $ROS_DISTRO https://github.com/linorobot/linorobot2 src/linorobot2
 git clone -b ros2 https://github.com/linorobot/ldlidar.git src/ldlidar
-touch src/linorobot2/linorobot2_gazebo/AMENT_IGNORE
-touch src/linorobot2/linorobot2_bringup/AMENT_IGNORE
-touch src/linorobot2/linorobot2_description/AMENT_IGNORE
-touch src/linorobot2_hoverboard_gazebo/AMENT_IGNORE
+touch src/_horo_gazebo/AMENT_IGNORE
 rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys microxrcedds_agent --skip-keys micro_ros_agent
 sudo pip install setuptools==58.2.0 # suppress colcon build warning
 colcon build

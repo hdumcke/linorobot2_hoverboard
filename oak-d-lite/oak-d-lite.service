@@ -1,5 +1,5 @@
 [Unit]
-Description=IMU service
+Description=OAK-D lite service
 After=robot.target
 
 [Service]
