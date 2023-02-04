@@ -29,7 +29,7 @@ def generate_launch_description():
     )
 
     ekf_config_path = PathJoinSubstitution(
-        [FindPackageShare("linorobot2_base"), "config", "ekf.yaml"]
+        [FindPackageShare("linorobot2_hoverboard_bringup"), "config", "ekf.yaml"]
     )
 
     world_path = PathJoinSubstitution(

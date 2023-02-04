@@ -2,6 +2,7 @@
 <robot name="linorobot2_2wd" xmlns:xacro="http://ros.org/wiki/xacro">
 
   <xacro:include filename="$(find linorobot2_hoverboard_description)/urdf/properties.urdf.xacro" />
+  <xacro:include filename="$(find linorobot2_hoverboard_description)/urdf/diffbot.ros2_control.xacro" />
   <xacro:include filename="$(find linorobot2_hoverboard_description)/urdf/mech/base.urdf.xacro" />
   <xacro:include filename="$(find linorobot2_hoverboard_description)/urdf/mech/wheel.urdf.xacro" />
   <xacro:include filename="$(find linorobot2_hoverboard_description)/urdf/mech/caster_wheel.urdf.xacro" />
@@ -73,5 +74,8 @@
     wheel_separation="${wheel_pos_y * 2}"
     wheel_radius="${wheel_radius}"
     wheel_torque="${wheel_torque}"
+  />
+
+  <xacro:diffbot_ros2_control
   />
 </robot>

@@ -14,7 +14,7 @@
 
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.substitutions import PathJoinSubstitution
+from launch.substitutions import Command, FindExecutable, PathJoinSubstitution
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -23,10 +23,6 @@ from launch_ros.substitutions import FindPackageShare
 def generate_launch_description():
     description_launch_path = PathJoinSubstitution(
         [FindPackageShare('linorobot2_hoverboard_description'), 'launch', 'description.launch.py']
-    )
-
-    hoverboard_launch_path = PathJoinSubstitution(
-        [FindPackageShare('linorobot2_hoverboard_control'), 'launch', 'linorobot2_hoverboard_interface.launch.py']
     )
 
     lidar_launch_path = PathJoinSubstitution(
@@ -38,7 +34,26 @@ def generate_launch_description():
     )
 
     ekf_config_path = PathJoinSubstitution(
-        [FindPackageShare("linorobot2_base"), "config", "ekf.yaml"]
+        [FindPackageShare("linorobot2_hoverboard_bringup"), "config", "ekf.yaml"]
+    )
+
+    robot_description_content = Command(
+        [
+            PathJoinSubstitution([FindExecutable(name="xacro")]),
+            " ",
+            PathJoinSubstitution(
+                [FindPackageShare("linorobot2_hoverboard_description"), "urdf", "robots/urdf.xacro"]
+            ),
+        ]
+    )
+    robot_description = {"robot_description": robot_description_content}
+
+    robot_controllers = PathJoinSubstitution(
+        [
+            FindPackageShare("linorobot2_hoverboard_bringup"),
+            "config",
+            "diffbot_controllers.yaml",
+        ]
     )
 
     return LaunchDescription([
@@ -59,12 +74,29 @@ def generate_launch_description():
             remappings=[("odometry/filtered", "odom")]
         ),
 
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(description_launch_path)
+        Node(
+            package="controller_manager",
+            executable="ros2_control_node",
+            parameters=[robot_description, robot_controllers],
+            output="both",
+            remappings=[("diffbot_base_controller/odom", "odom/unfiltered"),
+                        ("diffbot_base_controller/cmd_vel_unstamped", "cmd_vel")]
+        ),
+
+        Node(
+            package="controller_manager",
+            executable="spawner",
+            arguments=["joint_state_broadcaster", "--controller-manager", "/controller_manager"],
+        ),
+
+        Node(
+            package="controller_manager",
+            executable="spawner",
+            arguments=["diffbot_base_controller", "-c", "/controller_manager"],
         ),
 
         IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(hoverboard_launch_path),
+            PythonLaunchDescriptionSource(description_launch_path)
         ),
 
         IncludeLaunchDescription(
