@@ -128,17 +128,6 @@ std::vector<hardware_interface::CommandInterface> DiffBotSystemHardware::export_
 hardware_interface::CallbackReturn DiffBotSystemHardware::on_activate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  // BEGIN: This part here is for exemplary purposes - Please do not copy to your production code
-  //RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Activating ...please wait...");
-
-  for (auto i = 0; i < hw_start_sec_; i++)
-  {
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    RCLCPP_INFO(
-      rclcpp::get_logger("DiffBotSystemHardware"), "%.1f seconds left...", hw_start_sec_ - i);
-  }
-  // END: This part here is for exemplary purposes - Please do not copy to your production code
-
   // set some default values
   for (auto i = 0u; i < hw_positions_.size(); i++)
   {
@@ -150,28 +139,13 @@ hardware_interface::CallbackReturn DiffBotSystemHardware::on_activate(
     }
   }
 
-  //RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Successfully activated!");
-
-  return hardware_interface::CallbackReturn::SUCCESS;
+  return proxy.on_activate();
 }
 
 hardware_interface::CallbackReturn DiffBotSystemHardware::on_deactivate(
   const rclcpp_lifecycle::State & /*previous_state*/)
 {
-  // BEGIN: This part here is for exemplary purposes - Please do not copy to your production code
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Deactivating ...please wait...");
-
-  for (auto i = 0; i < hw_stop_sec_; i++)
-  {
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    RCLCPP_INFO(
-      rclcpp::get_logger("DiffBotSystemHardware"), "%.1f seconds left...", hw_stop_sec_ - i);
-  }
-  // END: This part here is for exemplary purposes - Please do not copy to your production code
-
-  RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Successfully deactivated!");
-
-  return hardware_interface::CallbackReturn::SUCCESS;
+  return proxy.on_deactivate();
 }
 
 hardware_interface::return_type DiffBotSystemHardware::read(
@@ -210,26 +184,13 @@ hardware_interface::return_type DiffBotSystemHardware::read(
   //  base_x_, base_y_, base_theta_);
   // END: This part here is for exemplary purposes - Please do not copy to your production code
 
-  return hardware_interface::return_type::OK;
+  return proxy.read();
 }
 
 hardware_interface::return_type horo_hardware::DiffBotSystemHardware::write(
   const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
 {
-  // BEGIN: This part here is for exemplary purposes - Please do not copy to your production code
-  //RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Writing...");
-
-  for (auto i = 0u; i < hw_commands_.size(); i++)
-  {
-    // Simulate sending commands to the hardware
-    //RCLCPP_INFO(
-    //  rclcpp::get_logger("DiffBotSystemHardware"), "Got command %.5f for '%s'!", hw_commands_[i],
-    //  info_.joints[i].name.c_str());
-  }
-  //RCLCPP_INFO(rclcpp::get_logger("DiffBotSystemHardware"), "Joints successfully written!");
-  // END: This part here is for exemplary purposes - Please do not copy to your production code
-
-  return hardware_interface::return_type::OK;
+  return proxy.write(hw_commands_[0], hw_commands_[1]);
 }
 
 }  // namespace horo_hardware

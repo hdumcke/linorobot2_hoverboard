@@ -17,6 +17,7 @@ add_library(
   ${PROJECT_NAME}
   SHARED
   src/hoverboard_system.cpp
+  src/hoverboard_proxy.cpp
 )
 target_include_directories(
   ${PROJECT_NAME}

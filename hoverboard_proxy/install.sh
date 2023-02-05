@@ -11,7 +11,7 @@ cd $BASEDIR
 make clean
 make
 
-sudo mkdir -p /var/lib/hoverboard/
-sudo cp hoverboard-proxy /var/lib/hoverboard/
+sudo mkdir -p /var/lib/horo/
+sudo cp hoverboard-proxy /var/lib/horo/
 sudo cp hoverboard-proxy.service /lib/systemd/system/
 sudo systemctl enable  hoverboard-proxy.service

@@ -4,7 +4,7 @@ Description=hoverboard proxy service
 [Service]
 Type=oneshot
 RemainAfterExit=yes
-ExecStart=/var/lib/hoverboard/hoverboard-proxy
+ExecStart=/var/lib/horo/hoverboard-proxy
 User=ubuntu
 
 [Install]

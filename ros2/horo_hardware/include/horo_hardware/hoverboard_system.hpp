@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef LINOROBOT2_HOVERBOARD_HARDWARE__HOVERBOARD_SYSTEM_HPP_
-#define LINOROBOT2_HOVERBOARD_HARDWARE__HOVERBOARD_SYSTEM_HPP_
+#ifndef HORO_HARDWARE__HOVERBOARD_SYSTEM_HPP_
+#define HORO_HARDWARE__HOVERBOARD_SYSTEM_HPP_
 
 #include <memory>
 #include <string>
@@ -29,6 +29,7 @@
 #include "rclcpp/time.hpp"
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
+#include "horo_hardware/hoverboard_proxy.hpp"
 
 namespace horo_hardware
 {
@@ -68,8 +69,10 @@ private:
 
   // Store the wheeled robot position
   double base_x_, base_y_, base_theta_;
+
+  ProxyClient proxy;
 };
 
 }  // namespace horo_hardware
 
-#endif  // LINOROBOT2_HOVERBOARD_HARDWARE__HOVERBOARD_SYSTEM_HPP_
+#endif  // HORO_HARDWARE__HOVERBOARD_SYSTEM_HPP_

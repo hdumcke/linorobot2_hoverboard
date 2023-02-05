@@ -51,7 +51,7 @@ mkdir -p ~/horo_ws/src
 cd ~/horo_ws
 cp -r $BASEDIR/ros2/* src/
 git clone -b ros2 https://github.com/linorobot/ldlidar.git src/ldlidar
-touch src/_horo_gazebo/AMENT_IGNORE
+touch src/horo_gazebo/AMENT_IGNORE
 rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys microxrcedds_agent --skip-keys micro_ros_agent
 sudo pip install setuptools==58.2.0 # suppress colcon build warning
 colcon build
