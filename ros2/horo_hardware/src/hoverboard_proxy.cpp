@@ -73,9 +73,9 @@ hardware_interface::return_type ProxyClient::write(double leftSpeed, double righ
     char recv_msg[s_recv_len];
     char send_msg[s_send_len];
 
-    RCLCPP_INFO(
-      rclcpp::get_logger("DiffBotSystemHardware"),
-      "leftSpeed %.5f rightSpeed %.5f\n", leftSpeed, rightSpeed);
+    //RCLCPP_INFO(
+    //  rclcpp::get_logger("DiffBotSystemHardware"),
+    //  "leftSpeed %.5f rightSpeed %.5f\n", leftSpeed, rightSpeed);
 
     memset(recv_msg, 0, s_recv_len*sizeof(char));
     memset(send_msg, 0, s_send_len*sizeof(char));
@@ -83,8 +83,8 @@ hardware_interface::return_type ProxyClient::write(double leftSpeed, double righ
     //TODO map speed to range of -1000 - 1000
     //wheel_radius: 0.0825 is defined in parameters
     double wheel_radius = 0.0825;
-    short speedMaster = rightSpeed/wheel_radius * 100;
-    short speedSlave = leftSpeed/wheel_radius * 100;
+    short speedMaster = rightSpeed * wheel_radius * 200;
+    short speedSlave = leftSpeed * wheel_radius * 100;
 	    
     send_msg[0] = 6;
     send_msg[1] = INST_SETSPEED;
