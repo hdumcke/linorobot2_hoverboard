@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'Hora'
+project = 'Horo'
 copyright = '2023, Horst Dumcke'
 author = 'Horst Dumcke'
 

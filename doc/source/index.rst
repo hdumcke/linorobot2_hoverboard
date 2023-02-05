@@ -1,9 +1,9 @@
-.. Hora documentation master file, created by
+.. Horo documentation master file, created by
    sphinx-quickstart on Wed Feb  1 08:25:47 2023.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Hora's documentation!
+Welcome to Horo's documentation!
 ================================
 
 .. toctree::
@@ -13,4 +13,5 @@ Welcome to Hora's documentation!
    intro.rst
    hoverboard.rst
    raspi.rst
+   customization.rst
    issues.rst
