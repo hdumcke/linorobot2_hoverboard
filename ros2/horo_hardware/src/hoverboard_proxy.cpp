@@ -84,7 +84,11 @@ hardware_interface::return_type ProxyClient::write(double leftSpeed, double righ
     //wheel_radius: 0.0825 is defined in parameters
     double wheel_radius = 0.0825;
     short speedMaster = rightSpeed * wheel_radius * 200;
-    short speedSlave = leftSpeed * wheel_radius * 100;
+    short speedSlave = leftSpeed * wheel_radius * 200;
+
+    //RCLCPP_INFO(
+    //  rclcpp::get_logger("DiffBotSystemHardware"),
+    //  "speedSlave %hi speedMaster %hi\n", speedSlave, speedMaster);
 	    
     send_msg[0] = 6;
     send_msg[1] = INST_SETSPEED;
