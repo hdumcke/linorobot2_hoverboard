@@ -82,7 +82,7 @@ hardware_interface::return_type ProxyClient::write(double leftSpeed, double righ
 
     //TODO map speed to range of -1000 - 1000
     //wheel_radius: 0.0825 is defined in parameters
-    double wheel_radius = 0.0825
+    double wheel_radius = 0.0825;
     short speedMaster = rightSpeed/wheel_radius * 100;
     short speedSlave = leftSpeed/wheel_radius * 100;
 	    

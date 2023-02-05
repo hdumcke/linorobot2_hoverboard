@@ -54,7 +54,7 @@ git clone -b ros2 https://github.com/linorobot/ldlidar.git src/ldlidar
 touch src/horo_gazebo/AMENT_IGNORE
 rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys microxrcedds_agent --skip-keys micro_ros_agent
 sudo pip install setuptools==58.2.0 # suppress colcon build warning
-colcon build
+MAKEFLAGS=-j1 colcon build --executor sequential --symlink-install
 
 ### Enable UART3
 ### TXD3 = Pin 7, RXD3 = Pin 29
