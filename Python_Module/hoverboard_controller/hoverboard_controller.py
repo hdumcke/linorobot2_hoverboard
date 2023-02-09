@@ -58,7 +58,7 @@ class HoverboardInterface:
             self.close()
             return None
 
-        battery = list(unpack("!f", data[2:]))[0]
+        battery = list(unpack("<f", data[2:]))[0]
         return battery
 
     def get_current(self):
@@ -78,7 +78,7 @@ class HoverboardInterface:
             self.close()
             return None
 
-        current = list(unpack("!2f", data[2:]))
+        current = list(unpack("<2f", data[2:]))
         return current
 
     def get_speed(self):
@@ -98,5 +98,5 @@ class HoverboardInterface:
             self.close()
             return None
 
-        speed = list(unpack("!2f", data[2:]))
+        speed = list(unpack("<2f", data[2:]))
         return speed

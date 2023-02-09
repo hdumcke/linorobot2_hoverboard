@@ -53,6 +53,67 @@ u16 CalcCRC(u8 *ptr, int count)
   return (crc);
 }
 
+void hexDump(const char *desc, void *addr, int len)
+{
+    int i;
+    unsigned char buff[17];
+    unsigned char *pc = (unsigned char*)addr;
+
+    // Output description if given.
+    if (desc != NULL)
+        printf ("%s:\n", desc);
+
+    // Process every byte in the data.
+    for (i = 0; i < len; i++) {
+        // Multiple of 16 means new line (with line offset).
+
+        if ((i % 16) == 0) {
+            // Just don't print ASCII for the zeroth line.
+            if (i != 0)
+                printf("  %s\n", buff);
+
+            // Output the offset.
+            printf("  %04x ", i);
+        }
+
+        // Now the hex code for the specific character.
+        printf(" %02x", pc[i]);
+
+        // And store a printable ASCII character for later.
+        if ((pc[i] < 0x20) || (pc[i] > 0x7e)) {
+            buff[i % 16] = '.';
+        } else {
+            buff[i % 16] = pc[i];
+        }
+
+        buff[(i % 16) + 1] = '\0';
+    }
+
+    // Pad out last line if not exactly 16 characters.
+    while ((i % 16) != 0) {
+        printf("   ");
+        i++;
+    }
+
+    // And print the final ASCII bit.
+    printf("  %s\n", buff);
+}
+
+float big2little(u8 *buffer, int offset)
+{
+    union
+    {
+        float f;
+        char b[4];
+    } dst;
+
+    dst.b[3] = buffer[offset + 0];
+    dst.b[2] = buffer[offset + 1];
+    dst.b[1] = buffer[offset + 2];
+    dst.b[0] = buffer[offset + 3];
+    return dst.f;
+}
+
 // Task handling communication with Hoverboard
 // - parameter (input/output) : the client/server shared-memory buffer
 void hoverboard_protocol(setpoint_and_feedback_data * control_block)
@@ -172,15 +233,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
 
         if (print_debug)
         {
-            printf("0x%.1X\n", tx_buffer[0]);
-            printf("0x%.1X\n", tx_buffer[1]);
-            printf("0x%.1X\n", tx_buffer[2]);
-            printf("0x%.1X\n", tx_buffer[3]);
-            printf("0x%.1X\n", tx_buffer[4]);
-            printf("0x%.1X\n", tx_buffer[5]);
-            printf("0x%.1X\n", tx_buffer[6]);
-            printf("0x%.1X\n", tx_buffer[7]);
-            printf("----------\n");
+	    hexDump("tx_buffer", (void *)tx_buffer, 8);
         }
 
         // Send
@@ -262,31 +315,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
 
         if (print_debug)
         {
-            printf("0x%.1X\n", rx_buffer[0]);
-            printf("0x%.1X\n", rx_buffer[1]);
-            printf("0x%.1X\n", rx_buffer[2]);
-            printf("0x%.1X\n", rx_buffer[3]);
-            printf("0x%.1X\n", rx_buffer[4]);
-            printf("0x%.1X\n", rx_buffer[5]);
-            printf("0x%.1X\n", rx_buffer[6]);
-            printf("0x%.1X\n", rx_buffer[7]);
-            printf("0x%.1X\n", rx_buffer[8]);
-            printf("0x%.1X\n", rx_buffer[9]);
-            printf("0x%.1X\n", rx_buffer[10]);
-            printf("0x%.1X\n", rx_buffer[11]);
-            printf("0x%.1X\n", rx_buffer[12]);
-            printf("0x%.1X\n", rx_buffer[13]);
-            printf("0x%.1X\n", rx_buffer[14]);
-            printf("0x%.1X\n", rx_buffer[15]);
-            printf("0x%.1X\n", rx_buffer[16]);
-            printf("0x%.1X\n", rx_buffer[17]);
-            printf("0x%.1X\n", rx_buffer[18]);
-            printf("0x%.1X\n", rx_buffer[19]);
-            printf("0x%.1X\n", rx_buffer[20]);
-            printf("0x%.1X\n", rx_buffer[21]);
-            printf("0x%.1X\n", rx_buffer[22]);
-            printf("0x%.1X\n", rx_buffer[23]);
-            printf("----------\n");
+	    hexDump("rx_buffer", (void *)rx_buffer, 24);
         }
 
         bool const rx_header_check {
@@ -322,11 +351,18 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
         }
 
         // decode parameters
-        memcpy(&control_block->feedback,rx_buffer+1,sizeof(parameters_control_acknowledge_format));
+        control_block->feedback.battery = big2little(rx_buffer, 1);
+        control_block->feedback.currentMaster = big2little(rx_buffer, 5);
+        control_block->feedback.speedMaster = big2little(rx_buffer, 9);
+        control_block->feedback.currentSlave = big2little(rx_buffer, 13);
+        control_block->feedback.speedSlave = big2little(rx_buffer, 17);
+	// correct direction
+	control_block->feedback.speedSlave *= -1;
 
         // log
         if (print_debug)
         {
+	    hexDump("control_block", (void *)control_block, sizeof(parameters_control_instruction_format) + sizeof(parameters_control_acknowledge_format));
             printf("battery: %.2f\n", control_block->feedback.battery);
             printf("currentMaster: %.2f\n", control_block->feedback.currentMaster);
             printf("speedMaster: %.2f\n", control_block->feedback.speedMaster);
@@ -441,20 +477,20 @@ int main(int argc, char *argv[])
                     memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(float));
                 }
 
-		offset += 4;
+		offset += sizeof(float);
                 if(r_buffer[1] == INST_GETCURR && r_buffer[0] == 2) {
                     s_buffer[0]= 2 + 2*sizeof(float);
                     s_buffer[1]= INST_GETCURR;
                     memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(float));
-                    memcpy(&s_buffer[6], (char*)control_block + offset +6, sizeof(float));
+                    memcpy(&s_buffer[6], (char*)control_block + offset + 2*sizeof(float), sizeof(float));
                 }
 
-		offset += 4;
+		offset += sizeof(float);
                 if(r_buffer[1] == INST_GETSPEED && r_buffer[0] == 2) {
                     s_buffer[0]= 2 + 2*sizeof(float);
                     s_buffer[1]= INST_GETSPEED;
                     memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(float));
-                    memcpy(&s_buffer[6], (char*)control_block + offset +6, sizeof(float));
+                    memcpy(&s_buffer[6], (char*)control_block + offset + 2*sizeof(float), sizeof(float));
                 }
 
                 /* Send result. */
