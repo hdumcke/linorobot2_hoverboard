@@ -1,0 +1,8 @@
+cython
+ipython
+ipywidgets
+jupyterlab
+jupyterlab-widgets
+matplotlib
+scipy
+sympy

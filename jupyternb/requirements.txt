@@ -1,0 +1,7 @@
+ipympl
+ipython
+jupyterlab
+jupyterlab-widgets
+matplotlib
+numpy
+sympy
