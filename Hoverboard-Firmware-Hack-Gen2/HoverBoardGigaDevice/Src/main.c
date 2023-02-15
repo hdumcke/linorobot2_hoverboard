@@ -58,7 +58,6 @@ extern uint8_t buzzerPattern; 						// global variable for the buzzer pattern. c
 extern float batteryVoltage; 							// global variable for battery voltage
 extern float currentDC; 									// global variable for current dc
 extern float realSpeed; 									// global variable for real Speed
-extern uint8_t dir;
 uint8_t slaveError = 0;										// global variable for slave error
 	
 extern FlagStatus timedOut;								// Timeoutvariable set by timeout timer

@@ -29,7 +29,7 @@ class HoverboardInterface:
             self.sock.sendall(pack("BBhh", 6, 1, speed, steer))
             data = self.sock.recv(2)
         except Exception as e:
-            if e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF:
+            if (errno in e) and (e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF):
                 self.close()
                 self.connect()
             else:
@@ -46,7 +46,7 @@ class HoverboardInterface:
             self.sock.sendall(pack("BB", 2, 2))
             data = self.sock.recv(6)
         except Exception as e:
-            if e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF:
+            if (errno in e) and (e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF):
                 self.close()
                 self.connect()
             else:
@@ -66,7 +66,7 @@ class HoverboardInterface:
             self.sock.sendall(pack("BB", 2, 3))
             data = self.sock.recv(10)
         except Exception as e:
-            if e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF:
+            if (errno in e) and (e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF):
                 self.close()
                 self.connect()
             else:
@@ -86,7 +86,7 @@ class HoverboardInterface:
             self.sock.sendall(pack("BB", 2, 4))
             data = self.sock.recv(10)
         except Exception as e:
-            if e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF:
+            if (errno in e) and (e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF):
                 self.close()
                 self.connect()
             else:

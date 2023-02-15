@@ -59,7 +59,6 @@ extern int32_t rightSpeed;
 extern float batteryVoltage;
 extern float realSpeed;
 extern float currentDC;
-extern uint8_t dir;
 
 extern uint8_t realSpeedSlave[4];
 extern uint8_t currentDCSlave[4];
@@ -79,7 +78,7 @@ void SendSteerDevice()
 	FLOATUNION_t currentSlave;
 	FLOATUNION_t speedSlave;
 	currentMaster.number = currentDC;
-	speedMaster.number = dir < 2 ? realSpeed : -realSpeed;
+	speedMaster.number = realSpeed;
 	battery.number = batteryVoltage;
 	while (i<4) {
 		currentSlave.bytes[i] = currentDCSlave[i];

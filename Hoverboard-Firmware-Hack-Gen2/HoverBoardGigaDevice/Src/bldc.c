@@ -41,11 +41,10 @@ const int16_t pwm_res = 72000000 / 2 / PWM_FREQ; // = 2000
 float batteryVoltage = 40.0;
 float currentDC = 0.0;
 float realSpeed = 0.0;
-uint8_t dir; 
-
+int8_t inc;
+int8_t last_inc = 0;
 // Timeoutvariable set by timeout timer
 extern FlagStatus timedOut;
-
 // Variables to be set from the main routine
 int16_t bldc_inputFilterPwm = 0;
 FlagStatus bldc_enable = RESET;
@@ -60,6 +59,7 @@ uint8_t hall_c;
 uint8_t hall;
 uint8_t pos;
 uint8_t lastPos;
+uint8_t lastHall;
 int16_t bldc_outputFilterPwm = 0;
 int32_t filter_reg;
 FlagStatus buzzerToggle = RESET;
@@ -68,7 +68,18 @@ uint8_t buzzerPattern = 0;
 uint16_t buzzerTimer = 0;
 int16_t offsetcount = 0;
 int16_t offsetdc = 2000;
-uint32_t speedCounter = 0;
+uint32_t loopCounter = 0;
+
+static const int increments[7][7] =
+{
+    {  0,  0,  0,  0,  0,  0,  0 },
+    {  0,  0,  0, -1,  0,  1,  0 },
+    {  0,  0,  0,  1,  0,  0, -1 },
+    {  0,  1, -1,  0,  0,  0,  0 },
+    {  0,  0,  0,  0,  0, -1,  1 },
+    {  0, -1,  0,  0,  1,  0,  0 },
+    {  0,  0,  1,  0, -1,  0,  0 },
+};
 
 //----------------------------------------------------------------------------
 // Commutation table
@@ -154,7 +165,6 @@ void CalculateBLDC(void)
 	int y = 0;     // yellow = phase A
 	int b = 0;     // blue   = phase B
 	int g = 0;     // green  = phase C
-	
 	// Calibrate ADC offsets for the first 1000 cycles
   if (offsetcount < 1000)
 	{  
@@ -203,27 +213,33 @@ void CalculateBLDC(void)
 	hall_a = gpio_input_bit_get(HALL_A_PORT, HALL_A_PIN);
   hall_b = gpio_input_bit_get(HALL_B_PORT, HALL_B_PIN);
 	hall_c = gpio_input_bit_get(HALL_C_PORT, HALL_C_PIN);
-  
+
+	
 	// Determine current position based on hall sensors
   hall = hall_a * 1 + hall_b * 2 + hall_c * 4;
   pos = hall_to_pos[hall];
-	if (pos == 6 && lastPos == 1) 
+	inc = increments[lastHall][hall];
+	lastHall = hall;
+	// Measure s
+	// Increments with 62.5us
+	if(loopCounter < 16000 && inc == 0) // Number of loops with no increment gives time
 	{
-		dir = 2;
+		loopCounter++;
 	}
-	else if (pos == 1 && lastPos == 6) 
+	else
 	{
-		dir = 1;
+		if (inc != last_inc)
+		{
+			last_inc = inc;
+			// Wait for direction to be determined in next loop
+		}
+		else
+		{
+			// Set and calculate velocity
+			realSpeed = (float)inc * 16000.0 / (float)loopCounter; // Ticks per Second
+			loopCounter = 0;
+		}
 	}
-	else if (pos < lastPos) 
-	{
-		dir = 2;
-	}
-	else if (pos > lastPos) 
-	{
-			dir = 1;
-	}
-	
 	// Calculate low-pass filter for pwm value
 	filter_reg = filter_reg - (filter_reg >> FILTER_SHIFT) + bldc_inputFilterPwm;
 	bldc_outputFilterPwm = filter_reg >> FILTER_SHIFT;
@@ -235,26 +251,6 @@ void CalculateBLDC(void)
 	timer_channel_output_pulse_value_config(TIMER_BLDC, TIMER_BLDC_CHANNEL_G, CLAMP(g + pwm_res / 2, 10, pwm_res-10));
 	timer_channel_output_pulse_value_config(TIMER_BLDC, TIMER_BLDC_CHANNEL_B, CLAMP(b + pwm_res / 2, 10, pwm_res-10));
 	timer_channel_output_pulse_value_config(TIMER_BLDC, TIMER_BLDC_CHANNEL_Y, CLAMP(y + pwm_res / 2, 10, pwm_res-10));
-	
-	// Increments with 62.5us
-	if(speedCounter < 4000) // No speed after 250ms
-	{
-		speedCounter++;
-	}
-	
-	// Every time position reaches value 1, one round is performed (rising edge)
-	if (lastPos != 1 && pos == 1)
-	{
-		realSpeed = 1991.81f / (float)speedCounter; //[km/h]
-		speedCounter = 0;
-	}
-	else
-	{
-		if (speedCounter >= 4000)
-		{
-			realSpeed = 0;
-		}
-	}
 
 	// Safe last position
 	lastPos = pos;

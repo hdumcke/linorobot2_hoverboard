@@ -4,4 +4,5 @@ jupyterlab
 jupyterlab-widgets
 matplotlib
 numpy
+numpy-quaternion
 sympy

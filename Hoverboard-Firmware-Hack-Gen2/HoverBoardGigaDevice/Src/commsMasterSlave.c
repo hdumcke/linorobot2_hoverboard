@@ -70,7 +70,6 @@ uint8_t slaveSendIdentifier = 0;
 
 extern float currentDC;
 extern float realSpeed;
-extern uint8_t dir;
 
 void CheckGeneralValue(uint8_t identifier, int16_t value);
 #endif
@@ -281,7 +280,7 @@ void SendMaster(FlagStatus upperLEDMaster, FlagStatus lowerLEDMaster, FlagStatus
 	uint8_t sendByte = 0;
 	FLOATUNION_t speed;
 	FLOATUNION_t current;
-	speed.number = dir < 2 ? realSpeed : -realSpeed;
+	speed.number = realSpeed;
 	current.number = currentDC;
 
 	sendByte |= (0 << 7);
