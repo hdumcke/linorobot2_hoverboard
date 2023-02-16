@@ -357,7 +357,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
         control_block->feedback.currentSlave = big2little(rx_buffer, 13);
         control_block->feedback.speedSlave = big2little(rx_buffer, 17);
 	// correct direction
-	control_block->feedback.speedSlave *= -1;
+	control_block->feedback.speedMaster *= -1;
 
         // log
         if (print_debug)
