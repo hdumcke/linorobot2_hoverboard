@@ -22,20 +22,22 @@ class driver_node : public rclcpp::Node
 public:
 	driver_node() : Node("hoverboard_driver"),
 	_br(this),
-	_x_pid(&_x_kp,&_x_kd,&_x_kff,-1000.0,1000.0),
-	_w_pid(&_w_kp,&_w_kd,&_w_kff,-1000.0,1000.0)
+	_x_pid(&_x_kp,&_x_ki,&_x_kd,&_x_kff,-1000.0,1000.0),
+	_w_pid(&_w_kp,&_w_ki,&_w_kd,&_w_kff,-1000.0,1000.0)
 	
 	{
 		this->declare_parameter("acc",_acceleration);
 		this->declare_parameter("dec",_deceleration);
 
 		this->declare_parameter("x_kp",_x_kp);
+		this->declare_parameter("x_ki",_x_ki);
         this->declare_parameter("x_kd",_x_kd);
         this->declare_parameter("x_kff",_x_kff);
         this->declare_parameter("x_d_alpha",_x_d_alpha);
         this->declare_parameter("x_o_alpha",_x_o_alpha);
 
         this->declare_parameter("w_kp",_w_kp);
+        this->declare_parameter("w_ki",_w_ki);
         this->declare_parameter("w_kd",_w_kd);
         this->declare_parameter("w_kff",_w_kff);
         this->declare_parameter("w_d_alpha",_w_d_alpha);
@@ -45,12 +47,14 @@ public:
         _deceleration = this->get_parameter("dec").as_double();
 
         _x_kp = this->get_parameter("x_kp").as_double();
+        _x_ki = this->get_parameter("x_ki").as_double();
         _x_kd = this->get_parameter("x_kd").as_double();
         _x_kff = this->get_parameter("x_kff").as_double();
         _x_d_alpha = this->get_parameter("x_d_alpha").as_double();
         _x_o_alpha = this->get_parameter("x_o_alpha").as_double();
 
         _w_kp = this->get_parameter("w_kp").as_double();
+        _w_kp = this->get_parameter("w_ki").as_double();
         _w_kd = this->get_parameter("w_kd").as_double();
         _w_kff = this->get_parameter("w_kff").as_double();
         _w_d_alpha = this->get_parameter("w_d_alpha").as_double();
@@ -378,6 +382,8 @@ private:
 	// closed-loop control
 	float _x_kp = 0.0f;
 	float _w_kp = 0.0f;
+	float _x_ki = 0.0f;
+	float _w_ki = 0.0f;
 	float _x_kd = 0.0f;
 	float _w_kd = 0.0f;
 	float _x_kff = 100.0f;

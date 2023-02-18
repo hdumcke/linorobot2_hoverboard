@@ -208,5 +208,31 @@
         </inertial>
       </link>
 
- 
+
+
+    <joint name="laser_joint" type="fixed">
+      <parent link="base_link"/>
+      <child link="laser"/>
+      <origin xyz="0.100 0.0 0.100 " rpy="0 0 0"/>
+    </joint>
+
+    <!-- caster left wheel Link -->
+    <link name="laser">
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+	        <box size="0.040 0.040 0.080"/>
+        </geometry>
+      </collision>
+
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry>
+		<box size="0.040 0.040 0.080"/>
+        </geometry>
+        <material name="black"/>
+      </visual>
+
+      </link>
+
 </robot>

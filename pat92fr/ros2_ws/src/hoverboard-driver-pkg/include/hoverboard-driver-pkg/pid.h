@@ -3,6 +3,7 @@ struct pid_ff_controller
 {
   pid_ff_controller(
     float * kp,
+    float * ki,
     float * kd,
     float * kff,
     float min_bound,
@@ -11,6 +12,7 @@ struct pid_ff_controller
     float out_alpha = 1.0f
   ) :
   _kp(kp),
+  _ki(ki),
   _kd(kd),
   _kff(kff),
   _min_bound(min_bound),
@@ -18,7 +20,7 @@ struct pid_ff_controller
   _d_alpha(d_alpha),
   _out_alpha(out_alpha)
   {
-
+	reset();
   }
 
   void reset()
@@ -26,6 +28,7 @@ struct pid_ff_controller
     _last_error = 0.0f;
     _last_derivative = 0.0f;
     _last_ouput = 0.0f;
+    _integral = 0.0f;
   }
 
   float process(float error, float ff_input = 0.0f)
@@ -33,8 +36,10 @@ struct pid_ff_controller
     float const derivative = (error-_last_error)*_d_alpha + (1.0f-_d_alpha)*_last_derivative;
     _last_derivative = derivative;
     _last_error = error;
+    _integral = _integral*0.999f + error; // auto-attenuation
     float output = 0.0f;
     if(_kp!=nullptr) output += (*_kp)*error;
+    if(_ki!=nullptr) output += (*_ki)*_integral;
     if(_kd!=nullptr) output += (*_kd)*derivative;
     if(_kff!=nullptr) output += (*_kff)*ff_input;
     output =_out_alpha*output + (1.0f-_out_alpha)*_last_ouput;
@@ -44,6 +49,7 @@ struct pid_ff_controller
 
   //private:
     float * _kp;
+    float * _ki;
     float * _kd;
     float * _kff;
     float _min_bound;
@@ -54,5 +60,6 @@ struct pid_ff_controller
     float _last_error = 0.0f;
     float _last_derivative = 0.0f;
     float _last_ouput = 0.0f;
+    float _integral = 0.0f;
 };
 
