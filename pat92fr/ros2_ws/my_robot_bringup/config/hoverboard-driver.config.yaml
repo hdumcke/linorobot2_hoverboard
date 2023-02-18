@@ -1,0 +1,15 @@
+hoverboard_driver_node:
+  ros__parameters:
+    acc: 1.0
+    dec: 2.0
+    x_kp: 800.0
+    x_kd: 1.0
+    x_kff: 280.0
+    x_d_alpha: 0.1
+    x_o_alpha: 0.05
+    w_kp: 200.0
+    w_kd: 0.0
+    w_kff: 280.0
+    w_d_alpha: 0.1
+    w_o_alpha: 0.05
+        
