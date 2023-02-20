@@ -81,4 +81,7 @@ sudo cp $BASEDIR/imu/imu.sh /var/lib/horo/
 sudo systemctl enable imu
 $BASEDIR/imu/ros_install.sh
 
+# install Python modules
+sudo pip install simple-pid
+
 sudo reboot

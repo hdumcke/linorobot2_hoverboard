@@ -5,4 +5,5 @@ jupyterlab-widgets
 matplotlib
 numpy
 numpy-quaternion
+simple-pid
 sympy
