@@ -263,7 +263,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
     	// If we do not get data within 1 second we assume Hoverboard stopped sending and we send again
         size_t const rx_buffer_size { 128 };
         u8 rx_buffer[rx_buffer_size] {0};
-    	size_t const expected_lenght {4 + sizeof(parameters_control_acknowledge_format)}; // '/<data><crc>\n'
+    	size_t const expected_lenght {4 + sizeof(parameters_control_acknowledge_format) - 2 * sizeof(u16)}; // '/<data><crc>\n' minus size of responseId and padding
         size_t received_length {0};
         size_t bytes_to_read {1};
     	while(received_length<expected_lenght)
@@ -351,6 +351,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
         }
 
         // decode parameters
+        control_block->feedback.responseId += 1;
         control_block->feedback.battery = big2little(rx_buffer, 1);
         control_block->feedback.currentMaster = big2little(rx_buffer, 5);
         control_block->feedback.speedMaster = big2little(rx_buffer, 9);
@@ -363,6 +364,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
         if (print_debug)
         {
 	    hexDump("control_block", (void *)control_block, sizeof(parameters_control_instruction_format) + sizeof(parameters_control_acknowledge_format));
+            printf("responseId: %hu\n", control_block->feedback.responseId);
             printf("battery: %.2f\n", control_block->feedback.battery);
             printf("currentMaster: %.2f\n", control_block->feedback.currentMaster);
             printf("speedMaster: %.2f\n", control_block->feedback.speedMaster);
@@ -470,7 +472,14 @@ int main(int argc, char *argv[])
                     s_buffer[1]= INST_SETSPEED;
                 }
 
+                if(r_buffer[1] == INST_GETCB && r_buffer[0] == 2) {
+                    s_buffer[0]= 2 + sizeof(parameters_control_instruction_format) + sizeof(parameters_control_acknowledge_format);
+                    s_buffer[1]= INST_GETCB;
+                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(parameters_control_instruction_format) + sizeof(parameters_control_acknowledge_format));
+                }
+
 		offset = sizeof(parameters_control_instruction_format);
+		offset += 4; // skip responseId
                 if(r_buffer[1] == INST_GETBATT && r_buffer[0] == 2) {
                     s_buffer[0]= 2 + sizeof(float);
                     s_buffer[1]= INST_GETBATT;

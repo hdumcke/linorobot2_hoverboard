@@ -100,3 +100,24 @@ class HoverboardInterface:
 
         speed = list(unpack("<2f", data[2:]))
         return speed
+
+    def get_controlblock(self):
+        try:
+            self.sock.sendall(pack("BB", 2, 5))
+            data = self.sock.recv(38)
+        except Exception as e:
+            if (errno in e) and (e.errno == errno.EPIPE or e.errno == errno.ENOTCONN or e.errno == errno.EBADF):
+                self.close()
+                self.connect()
+            else:
+                print("%s" % e)
+            return None
+
+        if data[0:2] != pack("BB", 30, 5):
+            print("Invalid Ack")
+            self.close()
+            return None
+
+        cb = {}
+        (cb['set_speed_left'], cb['set_speed_right'], cb['responseId'], cb['battery'], cb['currentMaster'],  cb['speedMaster'], cb['currentSlave'], cb['speedSlave']) = unpack("<2hH2x5f", data[2:])
+        return cb

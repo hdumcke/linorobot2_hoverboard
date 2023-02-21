@@ -25,6 +25,8 @@ struct parameters_control_instruction_format
 // frame parameters format for control acknowledge
 struct parameters_control_acknowledge_format
 {
+    u16   responseId;
+    u16   padding;
     float battery;
     float currentMaster;
     float speedMaster;
@@ -36,5 +38,6 @@ struct parameters_control_acknowledge_format
 #define INST_GETBATT 0x02
 #define INST_GETCURR 0x03
 #define INST_GETSPEED 0x04
+#define INST_GETCB 0x05
 
 #endif //_esp32_proxy__H
