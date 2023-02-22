@@ -11,10 +11,12 @@ Panels:
         - /RobotModel1/Status1
         - /TF1
         - /TF1/Frames1
-        - /TF1/Tree1
+        - /TF1/Tree1/map1
+        - /TF1/Tree1/map1/odom1
         - /Odometry1
         - /Odometry1/Shape1
         - /LaserScan1
+        - /Map1
       Splitter Ratio: 0.5
     Tree Height: 500
   - Class: rviz_common/Views
@@ -70,12 +72,7 @@ Visualization Manager:
           Show Axes: false
           Show Trail: false
           Value: true
-        caster_left__wheel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        caster_right_wheel:
+        caster_wheel:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -116,13 +113,17 @@ Visualization Manager:
           Value: true
         base_link:
           Value: true
-        caster_left__wheel:
-          Value: true
-        caster_right_wheel:
+        caster_wheel:
           Value: true
         laser:
           Value: true
+        left_wheel:
+          Value: true
+        map:
+          Value: true
         odom:
+          Value: true
+        right_wheel:
           Value: true
         world:
           Value: true
@@ -132,16 +133,19 @@ Visualization Manager:
       Show Axes: true
       Show Names: false
       Tree:
-        odom:
-          base_link:
-            base_footprint:
-              {}
-            caster_left__wheel:
-              {}
-            caster_right_wheel:
-              {}
-            laser:
-              {}
+        map:
+          odom:
+            base_link:
+              base_footprint:
+                {}
+              caster_wheel:
+                {}
+              laser:
+                {}
+              left_wheel:
+                {}
+              right_wheel:
+                {}
       Update Interval: 0
       Value: true
     - Angle Tolerance: 0.10000000149011612
@@ -217,6 +221,27 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Alpha: 0.699999988079071
+      Class: rviz_default_plugins/Map
+      Color Scheme: map
+      Draw Behind: false
+      Enabled: true
+      Name: Map
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: map
+      Update Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: map_updates
+      Use Timestamp: false
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -232,7 +257,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 5.270720958709717
+      Distance: 6.060524940490723
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -247,10 +272,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.4049997925758362
+      Pitch: 1.349998950958252
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.2868300676345825
+      Yaw: 3.096832275390625
     Saved: ~
 Window Geometry:
   Displays:

@@ -1,4 +1,5 @@
 #include "rclcpp/rclcpp.hpp"
+#include "rcl_interfaces/msg/set_parameters_result.hpp"
 
 #include <geometry_msgs/msg/twist.hpp>
 #include "nav_msgs/msg/odometry.hpp"
@@ -26,8 +27,10 @@ public:
 	_w_pid(&_w_kp,&_w_ki,&_w_kd,&_w_kff,-1000.0,1000.0)
 	
 	{
-		this->declare_parameter("acc",_acceleration);
-		this->declare_parameter("dec",_deceleration);
+		this->declare_parameter("acc_x",_acceleration_x);
+		this->declare_parameter("acc_z",_acceleration_z);
+
+		this->declare_parameter("pwm_max",_pwm_max);
 
 		this->declare_parameter("x_kp",_x_kp);
 		this->declare_parameter("x_ki",_x_ki);
@@ -43,8 +46,10 @@ public:
         this->declare_parameter("w_d_alpha",_w_d_alpha);
         this->declare_parameter("w_o_alpha",_w_o_alpha);
 
-        _acceleration = this->get_parameter("acc").as_double();
-        _deceleration = this->get_parameter("dec").as_double();
+        _acceleration_x = this->get_parameter("acc_x").as_double();
+        _acceleration_z = this->get_parameter("acc_z").as_double();
+
+        _pwm_max = this->get_parameter("pwm_max").as_int();
 
         _x_kp = this->get_parameter("x_kp").as_double();
         _x_ki = this->get_parameter("x_ki").as_double();
@@ -54,7 +59,7 @@ public:
         _x_o_alpha = this->get_parameter("x_o_alpha").as_double();
 
         _w_kp = this->get_parameter("w_kp").as_double();
-        _w_kp = this->get_parameter("w_ki").as_double();
+        _w_ki = this->get_parameter("w_ki").as_double();
         _w_kd = this->get_parameter("w_kd").as_double();
         _w_kff = this->get_parameter("w_kff").as_double();
         _w_d_alpha = this->get_parameter("w_d_alpha").as_double();
@@ -65,6 +70,8 @@ public:
 
         _w_pid._d_alpha = _w_d_alpha;
         _w_pid._out_alpha = _w_o_alpha;
+
+		_param_cb_ptr = this->add_on_set_parameters_callback(std::bind(&driver_node::dynamic_parameters_cb, this, std::placeholders::_1));
 
 		RCLCPP_INFO(this->get_logger(),"Starting...");
 		_cmd_vel_sub = create_subscription<geometry_msgs::msg::Twist>(
@@ -105,6 +112,59 @@ public:
 		if (_port_fd != -1) 
 			close(_port_fd);
 	}
+    
+	rcl_interfaces::msg::SetParametersResult dynamic_parameters_cb(
+        const std::vector<rclcpp::Parameter> & parameters
+	)
+    {
+        rcl_interfaces::msg::SetParametersResult result;
+        result.successful = true;
+        result.reason = "success";
+        for (const auto &parameter : parameters)
+        {
+            if (parameter.get_name() == "x_kp" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            {
+				_x_kp = parameter.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
+            }
+            if (parameter.get_name() == "_x_ki" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            {
+				_x_ki = parameter.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
+            }
+            if (parameter.get_name() == "_x_kd" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            {
+				_x_kd = parameter.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
+            }
+            if (parameter.get_name() == "_x_kff" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            {
+				_x_kff = parameter.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
+            }
+            if (parameter.get_name() == "_w_kp" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            {
+				_w_kp = parameter.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
+            }
+            if (parameter.get_name() == "_w_ki" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            {
+				_w_ki = parameter.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
+            }
+            if (parameter.get_name() == "_w_kd" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            {
+				_w_kd = parameter.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
+            }
+            if (parameter.get_name() == "_w_kff" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            {
+				_w_kff = parameter.as_double();
+                RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
+            }
+        }
+        return result;
+    }
 
 	void read()
 	{
@@ -299,72 +359,98 @@ public:
 
 	void write()
 	{
-	    if(_port_fd == -1)
-	    {
-        	RCLCPP_ERROR(this->get_logger(), "Attempt to write on closed serial");
-        	return;
-    	}
+		if(_port_fd == -1)
+		{
+			RCLCPP_ERROR(this->get_logger(), "Attempt to write on closed serial");
+			return;
+		}
 
-    	// filter speed feedback
-    	static float const alpha = 0.5f;
+		// timeout setpoints
+		rcutils_time_point_value_t now;
+		if (rcutils_system_time_now(&now) != RCUTILS_RET_OK)
+		{
+			RCLCPP_ERROR(this->get_logger(), "Failed to get system time");
+		}		
+		if( RCL_NS_TO_S(now) > (_setpoint_timestamp_s+2) ) // 2 sec time-out
+		{
+			_setpoint_vx = 0.0f;
+			_setpoint_wz = 0.0f;
+		}
+
+		// filter speed feedback
+		static float const alpha = 0.5f;
 		_actual_vx_filtered = (1.0f-alpha)*_actual_vx_filtered+alpha*_actual_vx;
 		_actual_wz_filtered = (1.0f-alpha)*_actual_wz_filtered+alpha*_actual_wz;
 
-    	// speed profil
-    	static float const dt = 0.010; // 10ms UART feedback rate
+		// speed profil
+		static float const dt = 0.010; // 10ms UART feedback rate
 		if(_setpoint_vx>_setpoint_vx_profil)
-			_setpoint_vx_profil = std::min(_setpoint_vx_profil+_acceleration*dt,_setpoint_vx);
+			_setpoint_vx_profil = std::min(_setpoint_vx_profil+_acceleration_x*dt,_setpoint_vx);
 		else
-			_setpoint_vx_profil = std::max(_setpoint_vx_profil-_deceleration*dt,_setpoint_vx);
+			_setpoint_vx_profil = std::max(_setpoint_vx_profil-_acceleration_x*dt,_setpoint_vx);
+		if(_setpoint_wz>_setpoint_wz_profil)
+			_setpoint_wz_profil = std::min(_setpoint_wz_profil+_acceleration_z*dt,_setpoint_wz);
+		else
+			_setpoint_wz_profil = std::max(_setpoint_wz_profil-_acceleration_z*dt,_setpoint_wz);
 
-    	// control
-    	float x_error = _setpoint_vx_profil - _actual_vx_filtered;
-    	float w_error = _setpoint_wz - _actual_wz_filtered;
+		// control
+		float x_error = _setpoint_vx_profil - _actual_vx_filtered;
+		float w_error = _setpoint_wz_profil - _actual_wz_filtered;
 
-    	float x_speed = _x_pid.process(x_error,_setpoint_vx_profil);
-    	float w_speed = _w_pid.process(w_error,_setpoint_wz);
+		float x_speed = _x_pid.process(x_error,_setpoint_vx_profil);
+		float w_speed = _w_pid.process(w_error,_setpoint_wz);
 
-    	// trace
-    	geometry_msgs::msg::Twist m;
-    	m.linear.x = x_speed;
-    	m.angular.z = w_speed;
+		// trace
+		geometry_msgs::msg::Twist m;
+		m.linear.x = x_speed;
+		m.angular.z = w_speed;
 		_speed_setpoint_pub->publish(m);
 
-    	// prepare command
-	    serial_command command;
-	    command.start = (uint16_t)START_FRAME;
-	    command.left_speed = std::clamp( (int16_t)(-x_speed-w_speed), (int16_t)-1000, (int16_t)1000);
-	    command.right_speed = std::clamp( (int16_t)(-x_speed+w_speed), (int16_t)-1000, (int16_t)1000);
-	    command.checksum = (uint16_t)(command.start ^ command.left_speed ^ command.right_speed);
+		// prepare command
+		serial_command command;
+		command.start = (uint16_t)START_FRAME;
+		command.left_speed = std::clamp( (int16_t)(-x_speed-w_speed), (int16_t)-_pwm_max, (int16_t)_pwm_max);
+		command.right_speed = std::clamp( (int16_t)(-x_speed+w_speed), (int16_t)-_pwm_max, (int16_t)_pwm_max);
+		command.checksum = (uint16_t)(command.start ^ command.left_speed ^ command.right_speed);
 
-    	int rc = ::write(_port_fd, (const void*)&command, sizeof(serial_command));
-    	if (rc < 0)
-    	{
-	        RCLCPP_ERROR(this->get_logger(), "Error writing to hoverboard serial port");
-	    }
-}
+		int rc = ::write(_port_fd, (const void*)&command, sizeof(serial_command));
+		if (rc < 0)
+		{
+			RCLCPP_ERROR(this->get_logger(), "Error writing to hoverboard serial port");
+		}
+	}
 
 private:
 	rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _cmd_vel_sub;
 	rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr _odom_pub;
 	rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _speed_setpoint_pub;
 	tf2_ros::TransformBroadcaster _br;
+	OnSetParametersCallbackHandle::SharedPtr _param_cb_ptr;
 
 	void _cmd_vel_callback(const std::shared_ptr<geometry_msgs::msg::Twist> msg) //, const std::string & key)
 	{
 		//RCLCPP_INFO(this->get_logger(),"CMD_VEL %.3f %.3f",msg->linear.x,msg->angular.z);
 		_setpoint_vx = msg->linear.x;
 		_setpoint_wz = msg->angular.z;
+		// get time
+		rcutils_time_point_value_t now;
+		if (rcutils_system_time_now(&now) != RCUTILS_RET_OK)
+		{
+			RCLCPP_ERROR(this->get_logger(), "Failed to get system time");
+		}
+		_setpoint_timestamp_s = RCL_NS_TO_S(now);
 	}
 
 	// setpoints
 	float _setpoint_vx = 0.0f;
 	float _setpoint_wz = 0.0f;
+	int32_t _setpoint_timestamp_s = 0;
 
 	// setpoint with acc/speed profil
-	float _acceleration = 1.0f;
-	float _deceleration = 0.5f;
+	float _acceleration_x = 1.0f;
+	float _acceleration_z = 1.0f;
 	float _setpoint_vx_profil = 0.0f;
+	float _setpoint_wz_profil = 0.0f;
 
 	// actual
 	float _actual_vx = 0.0f;
@@ -373,6 +459,9 @@ private:
 	// actual filtered
 	float _actual_vx_filtered = 0.0f;
 	float _actual_wz_filtered = 0.0f;
+
+	// max pwm
+	int32_t _pwm_max = 250;
 
 	// odometry
 	float _x = 0.0f;
