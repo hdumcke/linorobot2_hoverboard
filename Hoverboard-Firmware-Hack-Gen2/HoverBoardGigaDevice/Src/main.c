@@ -44,20 +44,26 @@
 #include "stdlib.h"
 #include "string.h"
 #include <math.h>     
-//#include "arm_math.h" 
+#include "arm_math.h" 
 
 #ifdef MASTER
-int32_t leftSpeed = 0;										// left speed setpoint (-1000,+1000)
-int32_t rightSpeed = 0;										// right speed setpoint (-1000,+1000)
+int32_t speedM = 0; 												// global variable for master wheel. -1000 to 1000
+int32_t speedS = 0; 												// global variable for slave wheel.    -1000 to 1000
+int32_t encM = 0; 												// global variable for master encoder starting at 0
+int32_t encS = 0; 												// global variable for slave encoder starting at 0
 FlagStatus activateWeakening = RESET;			// global variable for weakening
 FlagStatus beepsBackwards = RESET;  			// global variable for beeps backwards
 			
 extern uint8_t buzzerFreq;    						// global variable for the buzzer pitch. can be 1, 2, 3, 4, 5, 6, 7...
 extern uint8_t buzzerPattern; 						// global variable for the buzzer pattern. can be 1, 2, 3, 4, 5, 6, 7...
-			
+extern float Ki;
+extern float Kd;
+extern float Kp;
 extern float batteryVoltage; 							// global variable for battery voltage
 extern float currentDC; 									// global variable for current dc
 extern float realSpeed; 									// global variable for real Speed
+extern int16_t led_slave;
+extern int16_t back_led_slave;
 uint8_t slaveError = 0;										// global variable for slave error
 	
 extern FlagStatus timedOut;								// Timeoutvariable set by timeout timer
@@ -65,11 +71,10 @@ extern FlagStatus timedOut;								// Timeoutvariable set by timeout timer
 uint32_t inactivity_timeout_counter = 0;	// Inactivity counter
 uint32_t steerCounter = 0;								// Steer counter for setting update rate
 
-void ShowBatteryState(uint32_t pin);
 void BeepsBackwards(FlagStatus beepsBackwards);
 void ShutOff(void);
 #endif
-
+int32_t m_enc = 0;
 const float lookUpTableAngle[181] =  
 {
   -1,
@@ -254,7 +259,10 @@ const float lookUpTableAngle[181] =
   -1.067005175,
   -1
 };
+#ifdef SLAVE
+int32_t desiredSpeedSlave;								// Global Variable for desiredSpeedSlave, received by Slave
 
+#endif
 
 //----------------------------------------------------------------------------
 // MAIN function
@@ -268,8 +276,6 @@ int main (void)
 	int16_t sendSlaveValue = 0;
 	uint8_t sendSlaveIdentifier = 0;
 	int8_t index = 8;
-  int16_t pwmSlave = 0;
-	int16_t pwmMaster = 0;
 #endif
 	
 	//SystemClock_Config();
@@ -338,9 +344,6 @@ int main (void)
 			SendSteerDevice();
 		}
 
-		pwmSlave  =  leftSpeed < 50 &&  leftSpeed > -50 ? 0 : CLAMP( leftSpeed, -1000, 1000) * SPEED_COEFFICIENT;
-		pwmMaster = rightSpeed < 50 && rightSpeed > -50 ? 0 : CLAMP(rightSpeed, -1000, 1000) * SPEED_COEFFICIENT;
-			
 		// Read charge state
 		chargeStateLowActive = gpio_input_bit_get(CHARGE_STATE_PORT, CHARGE_STATE_PIN);
 		
@@ -365,45 +368,49 @@ int main (void)
 			case 2:
 				sendSlaveValue = realSpeed * 100;
 				break;
+			case 3:
+				sendSlaveValue = (int16_t)(Kp * 100);
+				break;
+			case 4:
+				sendSlaveValue = (int16_t)(Ki * 100);
+				break;
+			case 5:
+				sendSlaveValue = (int16_t)(Kd * 100);
+				break;			
+			case 6:
+				sendSlaveValue = led_slave;
+				break;
+			case 7:
+				sendSlaveValue = back_led_slave;
+			break;
 				default:
 					break;
 		}
 		
-    // Set output
-		SetPWM(pwmMaster);
-		SendSlave(-pwmSlave, enableSlave, RESET, chargeStateLowActive, sendSlaveIdentifier, sendSlaveValue);
-		
+
+		SendSlave(-speedS, enableSlave, RESET, chargeStateLowActive, sendSlaveIdentifier, sendSlaveValue);
 		// Increment identifier
 		sendSlaveIdentifier++;
-		if (sendSlaveIdentifier > 2)
+		if (sendSlaveIdentifier > 7)
 		{
 			sendSlaveIdentifier = 0;
 		}
 		
 		// Show green battery symbol when battery level BAT_LOW_LVL1 is reached
     if (batteryVoltage > BAT_LOW_LVL1)
-		{
-			// Show green battery light
-			ShowBatteryState(LED_GREEN);
-			
+		{			
 			// Beeps backwards
 			BeepsBackwards(beepsBackwards);
 		}
 		// Make silent sound and show orange battery symbol when battery level BAT_LOW_LVL2 is reached
     else if (batteryVoltage > BAT_LOW_LVL2 && batteryVoltage < BAT_LOW_LVL1)
-		{
-			// Show orange battery light
-			ShowBatteryState(LED_ORANGE);
-			
+		{			
       buzzerFreq = 5;
       buzzerPattern = 8;
     }
 		// Make even more sound and show red battery symbol when battery level BAT_LOW_DEAD is reached
 		else if  (batteryVoltage > BAT_LOW_DEAD && batteryVoltage < BAT_LOW_LVL2)
-		{
-			// Show red battery light
-			ShowBatteryState(LED_RED);
-			
+		{			
       buzzerFreq = 5;
       buzzerPattern = 1;
     }
@@ -425,7 +432,7 @@ int main (void)
     }
 		
 		// Calculate inactivity timeout (Except, when charger is active -> keep device running)
-    if (ABS(pwmMaster) > 50 || ABS(pwmSlave) > 50 || !chargeStateLowActive)
+    if (ABS(speedM) > 1 || ABS(speedS) > 1 || !chargeStateLowActive)
 		{
       inactivity_timeout_counter = 0;
     }
@@ -482,15 +489,7 @@ void ShutOff(void)
 	}
 }
 
-//----------------------------------------------------------------------------
-// Shows the battery state on the LEDs
-//----------------------------------------------------------------------------
-void ShowBatteryState(uint32_t pin)
-{
-	gpio_bit_write(LED_GREEN_PORT, LED_GREEN, pin == LED_GREEN ? SET : RESET);
-	gpio_bit_write(LED_ORANGE_PORT, LED_ORANGE, pin == LED_ORANGE ? SET : RESET);
-	gpio_bit_write(LED_RED_PORT, LED_RED, pin == LED_RED ? SET : RESET);
-}
+
 
 //----------------------------------------------------------------------------
 // Beeps while driving backwards
@@ -498,7 +497,7 @@ void ShowBatteryState(uint32_t pin)
 void BeepsBackwards(FlagStatus beepsBackwards)
 {
 	// If the speed is less than -50, beep while driving backwards
-	if (beepsBackwards == SET && leftSpeed < -50 && rightSpeed < -50)
+	if (beepsBackwards == SET && speedM < -50 && speedS)
 	{
 		buzzerFreq = 5;
     buzzerPattern = 4;

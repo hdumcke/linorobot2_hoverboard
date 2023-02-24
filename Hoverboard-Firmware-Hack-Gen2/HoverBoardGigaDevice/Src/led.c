@@ -33,7 +33,6 @@
 #include "../Inc/defines.h"
 
 // Only slave has LED mechanism
-#ifdef SLAVE
 
 // Lookuptable for brightness
 static unsigned char su8BrightnessTable[64] = 
@@ -61,7 +60,7 @@ static LED_PROGRAM sLEDProgram = LED_OFF;
 // Variables for effects
 static uint16_t speedFading = 150;		// Fading-Delay	
 static uint16_t speedBlink = 1274;		// Blink-Delay
-static uint16_t speedStrobe = 40;			// Strobe-Delay
+static uint16_t speedStrobe = 1000;			// Strobe-Delay
 
 // Counter for effects
 static uint16_t fadingCounter = 0;
@@ -123,6 +122,7 @@ void CalculateLEDProgram(void)
 			{
 				strobeToggle = SET;
 				SetHSBBrightness(0);
+				SetHSBHue(100);
 			}
 			else
 			{
@@ -131,6 +131,16 @@ void CalculateLEDProgram(void)
 			}
 		}
 	}
+}
+
+//----------------------------------------------------------------------------
+// Enable LED Pin
+//----------------------------------------------------------------------------
+void EnableLEDPin(uint32_t pin)
+{
+	gpio_bit_write(LED_GREEN_PORT, LED_GREEN, pin == LED_GREEN ? SET : RESET);
+	gpio_bit_write(LED_ORANGE_PORT, LED_ORANGE, pin == LED_ORANGE ? SET : RESET);
+	gpio_bit_write(LED_RED_PORT, LED_RED, pin == LED_RED ? SET : RESET);
 }
 
 //----------------------------------------------------------------------------
@@ -390,4 +400,4 @@ uint8_t HSBtoBlue(uint16_t hue, uint8_t sat)
 
 	return blue_val;
 }
-#endif
+

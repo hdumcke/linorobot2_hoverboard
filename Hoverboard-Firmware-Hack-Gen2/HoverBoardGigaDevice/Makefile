@@ -66,6 +66,7 @@ Drivers/GD32F1x0_standard_peripheral/Source/gd32f1x0_usart.c \
 Drivers/GD32F1x0_standard_peripheral/Source/gd32f1x0_wwdgt.c \
 Drivers/CMSIS/Source/system_gd32f1x0.c \
 Src/main.c \
+Src//pid.c \
 Src/bldc.c \
 Src/commsMasterSlave.c \
 Src/led.c \

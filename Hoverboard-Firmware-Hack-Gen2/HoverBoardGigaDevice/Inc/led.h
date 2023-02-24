@@ -34,9 +34,6 @@
 #include "gd32f1x0.h"
 #include "../Inc/config.h"
 
-// Only slave has LED mechanism
-#ifdef SLAVE
-
 // Modes for RGB-LED operation
 typedef enum
 {
@@ -102,6 +99,7 @@ uint16_t GetSpeedBlink(void);
 void SetSpeedStrobe(uint16_t speed);
 uint16_t GetSpeedStrobe(void);
 
-#endif
+void EnableLEDPin(uint32_t pin);
+
 
 #endif

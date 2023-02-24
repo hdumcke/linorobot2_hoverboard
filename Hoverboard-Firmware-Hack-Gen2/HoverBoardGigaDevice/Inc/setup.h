@@ -81,4 +81,6 @@ void USART_MasterSlave_init(void);
 //----------------------------------------------------------------------------
 void USART_Steer_COM_init(void);
 
+void HalTimerInit(void);
+
 #endif
