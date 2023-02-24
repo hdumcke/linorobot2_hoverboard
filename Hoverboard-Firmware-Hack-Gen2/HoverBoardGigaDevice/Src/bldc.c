@@ -45,6 +45,12 @@ int8_t inc;
 int8_t last_inc = 0;
 // Timeoutvariable set by timeout timer
 extern FlagStatus timedOut;
+extern int32_t speedM; // speed master
+extern int32_t desiredSpeedSlave;
+extern int32_t m_enc;
+#ifdef MASTER
+	extern int32_t encM;
+#endif
 // Variables to be set from the main routine
 int16_t bldc_inputFilterPwm = 0;
 FlagStatus bldc_enable = RESET;
@@ -220,6 +226,12 @@ void CalculateBLDC(void)
   pos = hall_to_pos[hall];
 	inc = increments[lastHall][hall];
 	lastHall = hall;
+	#ifdef SLAVE
+	m_enc += inc;
+	#endif
+	#ifdef MASTER
+	encM += inc;
+	#endif
 	// Measure s
 	// Increments with 62.5us
 	if(loopCounter < 16000 && inc == 0) // Number of loops with no increment gives time
@@ -236,7 +248,14 @@ void CalculateBLDC(void)
 		else
 		{
 			// Set and calculate velocity
+			// Update realSpeed and PWM
 			realSpeed = (float)inc * 16000.0 / (float)loopCounter; // Ticks per Second
+			#ifdef MASTER
+			SetPWM(updatePID((float)speedM, realSpeed, (float)loopCounter / 16000.0));
+			#endif
+			#ifdef SLAVE
+			SetPWM(updatePID((float)desiredSpeedSlave, realSpeed, (float)loopCounter / 16000.0));
+			#endif
 			loopCounter = 0;
 		}
 	}

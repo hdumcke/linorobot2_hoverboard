@@ -146,10 +146,4 @@ typedef struct
 	uint16_t current_dc;
 } adc_buf_t;
 
-typedef union 
-{
-	float number;
-	uint8_t bytes[4];
-} FLOATUNION_t;
-
 #endif

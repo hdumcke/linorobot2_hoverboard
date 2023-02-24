@@ -36,84 +36,102 @@
 #include "../Inc/config.h"
 #include "../Inc/defines.h"
 #include "../Inc/bldc.h"
+#include "../Inc/led.h"
 #include "stdio.h"
 #include "string.h"
 
-// Only master communicates with steering device
+// Only master communicates with steerin device
 #ifdef MASTER
-#define USART_STEER_TX_BYTES 24   // Transmit byte count including start '/' and stop character '\n'
-#define USART_STEER_RX_BYTES 8   // Receive byte count including start '/' and stop character '\n'
+#define USART_STEER_TX_BYTES 15   // Transmit byte count including start '/' and stop character '\n'
+#define USART_STEER_RX_BYTES 11   // Receive byte count including start '/' and stop character '\n'
 
 extern uint8_t usartSteer_COM_rx_buf[USART_STEER_COM_RX_BUFFERSIZE];
 static uint8_t sSteerRecord = 0;
 static uint8_t sUSARTSteerRecordBuffer[USART_STEER_RX_BYTES];
 static uint8_t sUSARTSteerRecordBufferCounter = 0;
-
+int16_t led_slave;
+int16_t back_led_slave;
 void CheckUSARTSteerInput(uint8_t u8USARTBuffer[]);
+// Config Params
+extern float Ki;
+extern float Kd;
+extern float Kp;
+extern int32_t speedM; // speed master
+extern int32_t speedS; // speed slave
 
-//extern int32_t steer;
-//extern int32_t speed;
-extern int32_t leftSpeed;
-extern int32_t rightSpeed;
-
-extern float batteryVoltage;
+extern int32_t encM; // speed master
+extern int32_t encS; // speed slave
+uint8_t sendSteerIdentifier = 0;
 extern float realSpeed;
-extern float currentDC;
+// Battery voltage and dc
+extern float batteryVoltage; 							// global variable for battery voltage
+extern float currentDC; 									// global variable for current dc
+extern int16_t currentDCSlave;
+extern int16_t realSpeedSlave;
 
-extern uint8_t realSpeedSlave[4];
-extern uint8_t currentDCSlave[4];
-
+extern uint8_t buzzerFreq;    						// global variable for the buzzer pitch. can be 1, 2, 3, 4, 5, 6, 7...
+extern uint8_t buzzerPattern; 						// global variable for the buzzer pattern. can be 1, 2, 3, 4, 5
 //----------------------------------------------------------------------------
 // Send frame to steer device
 //----------------------------------------------------------------------------
-void SendSteerDevice()
+void SendSteerDevice(void)
 {
-	int index = 0;
-	int i = 0;
-	uint8_t buffer[USART_STEER_TX_BYTES];
 	uint16_t crc;
-	FLOATUNION_t currentMaster;
-	FLOATUNION_t speedMaster;
-	FLOATUNION_t battery;
-	FLOATUNION_t currentSlave;
-	FLOATUNION_t speedSlave;
-	currentMaster.number = currentDC;
-	speedMaster.number = realSpeed;
-	battery.number = batteryVoltage;
-	while (i<4) {
-		currentSlave.bytes[i] = currentDCSlave[i];
-		speedSlave.bytes[i] = realSpeedSlave[i];
-		i++;
+	int16_t bat_voltage;
+	int16_t bat_curr;
+	int index = 0;
+	uint8_t buffer[USART_STEER_TX_BYTES];
+	int16_t value;
+	// Decide which process value has to be sent
+	switch(sendSteerIdentifier)
+	{
+		case BAT_U:
+			value = batteryVoltage * 100;
+			break;
+		case MOT_L_I:
+			value = currentDC * 100;
+			break;
+		case MOT_R_I:
+			value = currentDCSlave;
+			break;
+		case MOT_L_V:
+			value = (int16_t)(realSpeed * 100);
+			break;
+		case MOT_R_V:
+			value = (int16_t)(realSpeedSlave);
+			break;	
+		default:
+				break;
 	}
-	
+
 	// Ask for steer input
 	buffer[index++] = '/';
-	buffer[index++] = battery.bytes[3];
-	buffer[index++] = battery.bytes[2];
-	buffer[index++] = battery.bytes[1];
-	buffer[index++] = battery.bytes[0];
-	buffer[index++] = currentMaster.bytes[3];
-	buffer[index++] = currentMaster.bytes[2];
-	buffer[index++] = currentMaster.bytes[1];
-	buffer[index++] = currentMaster.bytes[0];
-	buffer[index++] = speedMaster.bytes[3];
-	buffer[index++] = speedMaster.bytes[2];
-	buffer[index++] = speedMaster.bytes[1];
-	buffer[index++] = speedMaster.bytes[0];
-	buffer[index++] = currentSlave.bytes[3];
-	buffer[index++] = currentSlave.bytes[2];
-	buffer[index++] = currentSlave.bytes[1];
-	buffer[index++] = currentSlave.bytes[0];
-	buffer[index++] = speedSlave.bytes[3];
-	buffer[index++] = speedSlave.bytes[2];
-	buffer[index++] = speedSlave.bytes[1];
-	buffer[index++] = speedSlave.bytes[0];
+	// encM
+	buffer[index++] = (encM >> 24) & 0xFF;
+	buffer[index++] = (encM >> 16) & 0xFF;
+	buffer[index++] = (encM >> 8) & 0xFF;
+	buffer[index++] =  encM & 0xFF;
+	// encS
+	buffer[index++] = (encS >> 24) & 0xFF;
+	buffer[index++] = (encS >> 16) & 0xFF;
+	buffer[index++] = (encS >> 8) & 0xFF;
+	buffer[index++] =  encS & 0xFF;
+	buffer[index++] = sendSteerIdentifier;
+	buffer[index++] = (value >> 8) & 0xFF;
+	buffer[index++] = value & 0xFF;
+
+	// Calculate CRC (first bytes except crc and stop byte)
 	crc = CalcCRC(buffer, index);
-  buffer[index++] = (crc >> 8) & 0xFF;
-  buffer[index++] = crc & 0xFF;
+	buffer[index++] = (crc >> 8) & 0xFF;
+	buffer[index++] =  crc & 0xFF;
 	buffer[index++] = '\n';
-	
 	SendBuffer(USART_STEER_COM, buffer, index);
+	// Increment identifier
+	sendSteerIdentifier++;
+	if (sendSteerIdentifier > 4)
+	{
+		sendSteerIdentifier = 0;
+	}
 }
 
 //----------------------------------------------------------------------------
@@ -153,6 +171,8 @@ void CheckUSARTSteerInput(uint8_t USARTBuffer[])
 {
 	// Auxiliary variables
 	uint16_t crc;
+	uint8_t identifier;
+	int16_t config_value;
 	
 	// Check start and stop character
 	if ( USARTBuffer[0] != '/' ||
@@ -171,13 +191,71 @@ void CheckUSARTSteerInput(uint8_t USARTBuffer[])
 		return;
 	}
 	
-	// Calculate result speed value -1000 to 1000
-	leftSpeed = (int16_t)((USARTBuffer[1] << 8) | USARTBuffer[2]);
-	
-	// Calculate result steering value -1000 to 1000
-	rightSpeed = (int16_t)((USARTBuffer[3] << 8) | USARTBuffer[4]);
-	
+	// Calculate result joint speed value -2000 to 2000 mm/s
+	speedM = CLAMP((int16_t)((USARTBuffer[1] << 8) | USARTBuffer[2]), -2000, 2000);
+	// Calculate result joint speed value -2000 to 2000 mm/s
+	speedS = CLAMP((int16_t)((USARTBuffer[3] << 8) | USARTBuffer[4]), -2000, 2000);
+	identifier = USARTBuffer[5];
+	config_value = (int16_t)((USARTBuffer[6] << 8) | USARTBuffer[7]);
+	CheckConfigValue(identifier, config_value);
 	// Reset the pwm timout to avoid stopping motors
 	ResetTimeout();
 }
+
+
+//----------------------------------------------------------------------------
+// Checks input value from master to set value depending on identifier
+//----------------------------------------------------------------------------
+void CheckConfigValue(uint8_t identifier, int16_t value)
+{
+	switch(identifier)
+	{
+		case PID_P:
+			Kp = (float)value / 100;
+			break;
+		case PID_I:
+			Ki = (float)value / 100;
+			break;
+		case PID_D:
+			Kd = (float)value / 100;
+			break;
+		case LED_L:
+			SetRGBProgram(value);
+			break;
+		case BACK_LED_L:
+			// 0 = Off, 1 = Green, 2 = Red, 3 = Orange
+			switch(value)
+			{
+				case 1:
+					EnableLEDPin(LED_GREEN);
+					break;
+				case 2:
+					EnableLEDPin(LED_RED);
+					break;
+				case 3:
+					EnableLEDPin(LED_ORANGE);
+					break;
+				default:
+					// Turn off LED
+					EnableLEDPin(0);
+			}
+			break;
+		case LED_R:
+			// Set global variable for slave
+			led_slave = value;
+			break;
+		case BACK_LED_R:
+			// Set global variable for slave
+			back_led_slave = value;
+			break;
+		case BUZZER:
+			buzzerFreq = value;
+      buzzerPattern = 1;
+			break;
+		default:
+			break;
+	}
+}
+
+
 #endif

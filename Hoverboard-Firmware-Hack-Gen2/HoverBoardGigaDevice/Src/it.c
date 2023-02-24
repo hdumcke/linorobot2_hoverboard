@@ -46,10 +46,8 @@ FlagStatus timedOut = SET;
 uint32_t hornCounter_ms = 0;
 #endif
 
-//extern int32_t steer;
-//extern int32_t speed;
-extern int32_t leftSpeed;
-extern int32_t rightSpeed;
+extern int32_t speedM;
+extern int32_t speedS;
 extern FlagStatus activateWeakening;
 extern FlagStatus beepsBackwards;
 
@@ -82,8 +80,8 @@ void TIMER13_IRQHandler(void)
 		if (timedOut == RESET)
 		{
 #ifdef MASTER
-			leftSpeed = 0;
-			rightSpeed = 0;
+			speedM = 0;
+			speedS = 0;
 			beepsBackwards = RESET;
 #endif
 #ifdef SLAVE
@@ -109,10 +107,10 @@ void TIMER13_IRQHandler(void)
 	{
 		hornCounter_ms++;
 	}
-	
-	// Update LED program
-	CalculateLEDProgram();
 #endif
+	// Update LED program
+  CalculateLEDProgram();
+
 	
 	// Clear timer update interrupt flag
 	timer_interrupt_flag_clear(TIMER13, TIMER_INT_UP);
@@ -143,10 +141,8 @@ void DMA_Channel0_IRQHandler(void)
 	// Calculate motor PWMs
 	CalculateBLDC();
 	
-	#ifdef SLAVE
 	// Calculates RGB LED
 	CalculateLEDPWM();
-	#endif
 	
 	if (dma_interrupt_flag_get(DMA_CH0, DMA_INT_FLAG_FTF))
 	{
