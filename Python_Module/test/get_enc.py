@@ -11,5 +11,5 @@ if len(sys.argv) != 1:
 ct = HoverboardInterface()
 
 while True:
-    print(ct.get_battery())
+    print(ct.get_enc())
     time.sleep(1 / 10)  # 10 Hz

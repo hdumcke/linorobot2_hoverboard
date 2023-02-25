@@ -3,9 +3,9 @@
 import sys
 from hoverboard_controller.hoverboard_controller import HoverboardInterface
 
-if len(sys.argv) != 3:
-    print("usage: %s <speed_l> <speed_r>" % sys.argv[0])
+if len(sys.argv) != 2:
+    print("usage: %s <buzzer>" % sys.argv[0])
     sys.exit(1)
 
 ct = HoverboardInterface()
-ct.set_speed(int(sys.argv[1]), int(sys.argv[2]))
+ct.set_buzzer(int(sys.argv[1]))

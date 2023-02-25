@@ -26,6 +26,8 @@ struct setpoint_and_feedback_data
     parameters_control_acknowledge_format feedback;
 };
 
+u8 sendSteerIdentifier = {0};
+
 //----------------------------------------------------------------------------
 // Calculate CRC
 //----------------------------------------------------------------------------
@@ -99,19 +101,36 @@ void hexDump(const char *desc, void *addr, int len)
     printf("  %s\n", buff);
 }
 
-float big2little(u8 *buffer, int offset)
+u16 big2little16(u8 *buffer, int offset)
 {
     union
     {
-        float f;
-        char b[4];
+        s16 v;
+        char b[2];
     } dst;
 
+    dst.b[1] = buffer[offset + 0];
+    dst.b[0] = buffer[offset + 1];
+    return dst.v;
+}
+
+u32 big2little32(u8 *buffer, int offset)
+{
+    union
+    {
+        s32 v;
+        char b[8];
+    } dst;
+
+    dst.b[7] = 0;
+    dst.b[6] = 0;
+    dst.b[5] = 0;
+    dst.b[4] = 0;
     dst.b[3] = buffer[offset + 0];
     dst.b[2] = buffer[offset + 1];
     dst.b[1] = buffer[offset + 2];
     dst.b[0] = buffer[offset + 3];
-    return dst.f;
+    return dst.v;
 }
 
 // Task handling communication with Hoverboard
@@ -173,7 +192,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
     options.c_cc[VMIN] = 0;
 
     // Set baud rate
-    cfsetospeed(&options, B19200);
+    cfsetospeed(&options, B38400);
 
     // Apply options
     result = tcsetattr(fd, TCSANOW, &options);
@@ -206,11 +225,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
          * Encode a CONTROL frame
          */
 
-        // Compute the size of the payload (parameters length + 2)
-        size_t const tx_payload_length { sizeof(parameters_control_instruction_format) + 2 };
-
-        // Compute the size of the frame
-        size_t const tx_buffer_size { tx_payload_length + 2 };
+        size_t const tx_buffer_size {11};
 
         // Build the frame
         u8 tx_buffer[tx_buffer_size]
@@ -222,18 +237,59 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
 	tx_buffer[2] = control_block->control.leftSpeed & 0xFF;
 	tx_buffer[3] = (control_block->control.rightSpeed >> 8) & 0xFF;
 	tx_buffer[4] = control_block->control.rightSpeed & 0xFF;
+	tx_buffer[5] = sendSteerIdentifier;
+	switch(sendSteerIdentifier)
+        {
+	    case PID_P:
+		tx_buffer[6] = (control_block->control.pid_p >> 8) & 0xFF;
+                tx_buffer[7] = control_block->control.pid_p & 0xFF;
+		break;
+	    case PID_I:
+		tx_buffer[6] = (control_block->control.pid_i >> 8) & 0xFF;
+                tx_buffer[7] = control_block->control.pid_i & 0xFF;
+		break;
+	    case PID_D:
+		tx_buffer[6] = (control_block->control.pid_d >> 8) & 0xFF;
+                tx_buffer[7] = control_block->control.pid_d & 0xFF;
+		break;
+	    case LED_L:
+		tx_buffer[6] = (control_block->control.led_l >> 8) & 0xFF;
+                tx_buffer[7] = control_block->control.led_l & 0xFF;
+		break;
+	    case LED_R:
+		tx_buffer[6] = (control_block->control.led_r >> 8) & 0xFF;
+                tx_buffer[7] = control_block->control.led_r & 0xFF;
+		break;
+	    case BACK_LED_L:
+		tx_buffer[6] = (control_block->control.back_led_l >> 8) & 0xFF;
+                tx_buffer[7] = control_block->control.back_led_l & 0xFF;
+		break;
+	    case BACK_LED_R:
+		tx_buffer[6] = (control_block->control.back_led_r >> 8) & 0xFF;
+                tx_buffer[7] = control_block->control.back_led_r & 0xFF;
+		break;
+	    case BUZZER:
+		tx_buffer[6] = (control_block->control.buzzer >> 8) & 0xFF;
+                tx_buffer[7] = control_block->control.buzzer & 0xFF;
+		break;
+              default:
+                  break;
+	}
+	sendSteerIdentifier++;
+	if (sendSteerIdentifier > 7)
+	    sendSteerIdentifier = 0;
 
         // Checksum
 	u16 crc = CalcCRC(tx_buffer, tx_buffer_size - 3);
-	tx_buffer[5] = (crc >> 8) & 0xFF;
-	tx_buffer[6] = crc & 0xFF;
+	tx_buffer[8] = (crc >> 8) & 0xFF;
+	tx_buffer[9] = crc & 0xFF;
 
 	// Stop byte
-        tx_buffer[7] = 0x0A;
+        tx_buffer[10] = 0x0A;
 
         if (print_debug)
         {
-	    hexDump("tx_buffer", (void *)tx_buffer, 8);
+	    hexDump("tx_buffer", (void *)tx_buffer, 11);
         }
 
         // Send
@@ -263,7 +319,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
     	// If we do not get data within 1 second we assume Hoverboard stopped sending and we send again
         size_t const rx_buffer_size { 128 };
         u8 rx_buffer[rx_buffer_size] {0};
-    	size_t const expected_lenght {4 + sizeof(parameters_control_acknowledge_format) - 2 * sizeof(u16)}; // '/<data><crc>\n' minus size of responseId and padding
+    	size_t const expected_lenght {15}; 
         size_t received_length {0};
         size_t bytes_to_read {1};
     	while(received_length<expected_lenght)
@@ -351,25 +407,46 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
         }
 
         // decode parameters
+        u8 recSteerIdentifier;
         control_block->feedback.responseId += 1;
-        control_block->feedback.battery = big2little(rx_buffer, 1);
-        control_block->feedback.currentMaster = big2little(rx_buffer, 5);
-        control_block->feedback.speedMaster = big2little(rx_buffer, 9);
-        control_block->feedback.currentSlave = big2little(rx_buffer, 13);
-        control_block->feedback.speedSlave = big2little(rx_buffer, 17);
+        control_block->feedback.encM = big2little32(rx_buffer, 1);
+        control_block->feedback.encS = big2little32(rx_buffer, 5);
+	recSteerIdentifier = rx_buffer[9];
+	switch(recSteerIdentifier)
+       	{
+              case BAT_U:
+                  control_block->feedback.battery = big2little16(rx_buffer, 10);
+                  break;
+              case MOT_R_I:
+                  control_block->feedback.currentSlave = big2little16(rx_buffer, 10);
+                  break;
+              case MOT_L_I:
+                  control_block->feedback.currentMaster = big2little16(rx_buffer, 10);
+                  break;
+              case MOT_R_V:
+                  control_block->feedback.speedSlave = big2little16(rx_buffer, 10);
+                  break;
+              case MOT_L_V:
+                  control_block->feedback.speedMaster = big2little16(rx_buffer, 10);
+                  break;
+              default:
+                  break;
+	}
 	// correct direction
-	control_block->feedback.speedMaster *= -1;
+	// control_block->feedback.encM *= -1;
 
         // log
         if (print_debug)
         {
 	    hexDump("control_block", (void *)control_block, sizeof(parameters_control_instruction_format) + sizeof(parameters_control_acknowledge_format));
             printf("responseId: %hu\n", control_block->feedback.responseId);
-            printf("battery: %.2f\n", control_block->feedback.battery);
-            printf("currentMaster: %.2f\n", control_block->feedback.currentMaster);
-            printf("speedMaster: %.2f\n", control_block->feedback.speedMaster);
-            printf("currentSlave: %.2f\n", control_block->feedback.currentSlave);
-            printf("speedSlave: %.2f\n", control_block->feedback.speedSlave);
+            printf("encM: %lu\n", control_block->feedback.encM);
+            printf("encS: %lu\n", control_block->feedback.encS);
+            printf("battery: %u\n", control_block->feedback.battery);
+            printf("currentMaster: %u\n", control_block->feedback.currentMaster);
+            printf("speedMaster: %u\n", control_block->feedback.speedMaster);
+            printf("currentSlave: %u\n", control_block->feedback.currentSlave);
+            printf("speedSlave: %u\n", control_block->feedback.speedSlave);
 	}
 
 
@@ -467,7 +544,7 @@ int main(int argc, char *argv[])
 		int offset;
                 offset = 0;
                 if(r_buffer[1] == INST_SETSPEED && r_buffer[0] == 6) {
-                    memcpy((char*)control_block + offset, &r_buffer[2], sizeof(parameters_control_instruction_format));
+                    memcpy((char*)control_block + offset, &r_buffer[2], 4);
                     s_buffer[0]= 2;
                     s_buffer[1]= INST_SETSPEED;
                 }
@@ -478,28 +555,63 @@ int main(int argc, char *argv[])
                     memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(parameters_control_instruction_format) + sizeof(parameters_control_acknowledge_format));
                 }
 
-		offset = sizeof(parameters_control_instruction_format);
-		offset += 4; // skip responseId
+                offset += 2 * sizeof(s16);
+                if(r_buffer[1] == INST_SETPID && r_buffer[0] == 8) {
+                    memcpy((char*)control_block + offset, &r_buffer[2], 6);
+                    s_buffer[0]= 2;
+                    s_buffer[1]= INST_SETPID;
+                }
+
+                offset += 3 * sizeof(s16);
+                if(r_buffer[1] == INST_SETLED && r_buffer[0] == 6) {
+                    memcpy((char*)control_block + offset, &r_buffer[2], 4);
+                    s_buffer[0]= 2;
+                    s_buffer[1]= INST_SETLED;
+                }
+
+                offset += 2 * sizeof(s16);
+                if(r_buffer[1] == INST_SETBACK_LED && r_buffer[0] == 6) {
+                    memcpy((char*)control_block + offset, &r_buffer[2], 4);
+                    s_buffer[0]= 2;
+                    s_buffer[1]= INST_SETBACK_LED;
+                }
+
+                offset += 2 * sizeof(s16);
+                if(r_buffer[1] == INST_SETBUZZER && r_buffer[0] == 4) {
+                    memcpy((char*)control_block + offset, &r_buffer[2], 2);
+                    s_buffer[0]= 2;
+                    s_buffer[1]= INST_SETBUZZER;
+                }
+
+                offset += sizeof(s16);
+		offset += 2; // skip responseId
+                if(r_buffer[1] == INST_GETENC && r_buffer[0] == 2) {
+                    s_buffer[0]= 2 + 16;
+                    s_buffer[1]= INST_GETENC;
+                    memcpy(&s_buffer[2], (char*)control_block + offset, 16);
+                }
+
+		offset += 16;
                 if(r_buffer[1] == INST_GETBATT && r_buffer[0] == 2) {
-                    s_buffer[0]= 2 + sizeof(float);
+                    s_buffer[0]= 2 + sizeof(s16);
                     s_buffer[1]= INST_GETBATT;
-                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(float));
+                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(s16));
                 }
 
-		offset += sizeof(float);
+		offset += sizeof(s16);
                 if(r_buffer[1] == INST_GETCURR && r_buffer[0] == 2) {
-                    s_buffer[0]= 2 + 2*sizeof(float);
+                    s_buffer[0]= 2 + 2*sizeof(s16);
                     s_buffer[1]= INST_GETCURR;
-                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(float));
-                    memcpy(&s_buffer[6], (char*)control_block + offset + 2*sizeof(float), sizeof(float));
+                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(16));
+                    memcpy(&s_buffer[4], (char*)control_block + offset + 2*sizeof(s16), sizeof(s16));
                 }
 
-		offset += sizeof(float);
+		offset += sizeof(s16);
                 if(r_buffer[1] == INST_GETSPEED && r_buffer[0] == 2) {
-                    s_buffer[0]= 2 + 2*sizeof(float);
+                    s_buffer[0]= 2 + 2*sizeof(s16);
                     s_buffer[1]= INST_GETSPEED;
-                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(float));
-                    memcpy(&s_buffer[6], (char*)control_block + offset + 2*sizeof(float), sizeof(float));
+                    memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(16));
+                    memcpy(&s_buffer[4], (char*)control_block + offset + 2*sizeof(s16), sizeof(s16));
                 }
 
                 /* Send result. */

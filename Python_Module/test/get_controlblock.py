@@ -12,4 +12,4 @@ ct = HoverboardInterface()
 
 while True:
     print(ct.get_controlblock())
-    time.sleep(1 / 20)  # 20 Hz
+    time.sleep(1 / 10)  # 10 Hz
