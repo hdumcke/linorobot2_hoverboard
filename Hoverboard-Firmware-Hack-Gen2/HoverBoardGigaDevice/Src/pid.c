@@ -39,5 +39,5 @@ int16_t updatePID(const float desired_val, const float measured_val, const float
 	// Remember stuff for next calculation
 	last_error = error;
 	// Compute actual PWM output
-	return CLAMP((int16_t) (Kp*error + Ki*Iterm + Kd*Dterm), -1000, 1000;
+	return CLAMP((int16_t) (Kp*error + Ki*Iterm + Kd*Dterm), -1000, 1000);
 }
