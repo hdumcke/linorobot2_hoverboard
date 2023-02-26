@@ -254,13 +254,14 @@ void CalculateBLDC(void)
 		}
 	}
 	// PID controller frequency 100 Hz
+	// realSpeed in rpm, use conversion factor
         if (buzzerTimer % 160 == 0)
 	{
 		#ifdef MASTER
-		SetPWM(updatePID((float)speedM, realSpeed, 0.01));
+		SetPWM(updatePID((float)speedM, realSpeed / 20., 0.01));
 		#endif
 		#ifdef SLAVE
-		SetPWM(updatePID((float)desiredSpeedSlave, realSpeed, 0.01));
+		SetPWM(updatePID((float)desiredSpeedSlave, realSpeed / 20., 0.01));
 		#endif
 	}
 	// Calculate low-pass filter for pwm value
