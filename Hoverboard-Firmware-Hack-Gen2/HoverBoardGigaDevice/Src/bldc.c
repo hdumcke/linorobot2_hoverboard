@@ -184,10 +184,10 @@ void CalculateBLDC(void)
 	{
     batteryVoltage = batteryVoltage * 0.999 + ((float)adc_buffer.v_batt * ADC_BATTERY_VOLT) * 0.001;
   }
+  buzzerTimer++;
 	
 #ifdef MASTER
 	// Create square wave for buzzer
-  buzzerTimer++;
   if (buzzerFreq != 0 && (buzzerTimer / 5000) % (buzzerPattern + 1) == 0)
 	{
     if (buzzerTimer % buzzerFreq == 0)
@@ -250,14 +250,19 @@ void CalculateBLDC(void)
 			// Set and calculate velocity
 			// Update realSpeed and PWM
 			realSpeed = (float)inc * 16000.0 / (float)loopCounter; // Ticks per Second
-			#ifdef MASTER
-			SetPWM(updatePID((float)speedM, realSpeed, (float)loopCounter / 16000.0));
-			#endif
-			#ifdef SLAVE
-			SetPWM(updatePID((float)desiredSpeedSlave, realSpeed, (float)loopCounter / 16000.0));
-			#endif
 			loopCounter = 0;
 		}
+	}
+	// PID controller frequency 100 Hz
+	// realSpeed in rpm, use conversion factor
+        if (buzzerTimer % 160 == 0)
+	{
+		#ifdef MASTER
+		SetPWM(updatePID((float)speedM, realSpeed / 20., 0.01));
+		#endif
+		#ifdef SLAVE
+		SetPWM(updatePID((float)desiredSpeedSlave, realSpeed / 20., 0.01));
+		#endif
 	}
 	// Calculate low-pass filter for pwm value
 	filter_reg = filter_reg - (filter_reg >> FILTER_SHIFT) + bldc_inputFilterPwm;
