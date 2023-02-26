@@ -1,18 +1,18 @@
 hoverboard_driver_node:
   ros__parameters:
     acc_x: 1.5
-    acc_z: 1.0
+    acc_z: 2.0
     pwm_max: 350
-    x_kp: 50.0
-    x_ki: 12.0
+    x_kp: 100.0
+    x_ki: 10.0
     x_kd: 2.0
-    x_kff: 50.0
+    x_kff: 160.0
     x_d_alpha: 0.1
     x_o_alpha: 1.0
     w_kp: 50.0
-    w_ki: 12.0
-    w_kd: 2.0
-    w_kff: 50.0
+    w_ki: 1.0
+    w_kd: 0.5
+    w_kff: 60.0
     w_d_alpha: 0.1
     w_o_alpha: 1.0
         
