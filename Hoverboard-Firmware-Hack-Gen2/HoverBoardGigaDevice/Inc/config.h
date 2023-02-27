@@ -50,7 +50,7 @@
 
 // ################################################################################
 
-#define DELAY_IN_MAIN_LOOP 	5         // Delay in ms
+#define DELAY_IN_MAIN_LOOP 	1         // Delay in ms
 
 #define TIMEOUT_MS          2000      // Time in milliseconds without steering commands before pwm emergency off
 
