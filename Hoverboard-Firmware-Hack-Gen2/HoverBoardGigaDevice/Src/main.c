@@ -69,7 +69,6 @@ uint8_t slaveError = 0;										// global variable for slave error
 extern FlagStatus timedOut;								// Timeoutvariable set by timeout timer
 
 uint32_t inactivity_timeout_counter = 0;	// Inactivity counter
-uint32_t steerCounter = 0;								// Steer counter for setting update rate
 
 void BeepsBackwards(FlagStatus beepsBackwards);
 void ShutOff(void);
@@ -337,12 +336,8 @@ int main (void)
   while(1)
 	{
 #ifdef MASTER
-		steerCounter++;	
-		if ((steerCounter % 2) == 0)
-		{	
-			// Request steering data
-			SendSteerDevice();
-		}
+		// Request steering data
+		SendSteerDevice();
 
 		// Read charge state
 		chargeStateLowActive = gpio_input_bit_get(CHARGE_STATE_PORT, CHARGE_STATE_PIN);
