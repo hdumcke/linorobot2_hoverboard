@@ -22,7 +22,7 @@ class driver_node : public rclcpp::Node
 {
 public:
 	driver_node() : Node("hoverboard_driver"),
-	_br(this),
+	//_br(this),
 	_x_pid(&_x_kp,&_x_ki,&_x_kd,&_x_kff,-1000.0,1000.0),
 	_w_pid(&_w_kp,&_w_ki,&_w_kd,&_w_kff,-1000.0,1000.0)
 	
@@ -82,7 +82,7 @@ public:
 
 		// odometry publisher
  		_odom_pub = create_publisher<nav_msgs::msg::Odometry>(
- 			"/odom",
+ 			"/odom_wheel",
  			10
  		);
 
@@ -104,7 +104,20 @@ public:
 	    options.c_oflag = 0;
 	    options.c_lflag = 0;
 	    tcflush(_port_fd, TCIFLUSH);
-	    tcsetattr(_port_fd, TCSANOW, &options);			
+	    tcsetattr(_port_fd, TCSANOW, &options);	
+
+		// get time
+		rcutils_time_point_value_t now;
+		if (rcutils_system_time_now(&now) != RCUTILS_RET_OK)
+		{
+			RCLCPP_ERROR(this->get_logger(), "Failed to get system time");
+		}
+		_stat_start_time_s = RCL_NS_TO_S(now);	
+
+		_timer = this->create_wall_timer(
+			std::chrono::milliseconds(5),
+			std::bind(&driver_node::read, this)
+		);
 	}
 
 	~driver_node()
@@ -127,37 +140,37 @@ public:
 				_x_kp = parameter.as_double();
                 RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
             }
-            if (parameter.get_name() == "_x_ki" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            if (parameter.get_name() == "x_ki" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
             {
 				_x_ki = parameter.as_double();
                 RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
             }
-            if (parameter.get_name() == "_x_kd" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            if (parameter.get_name() == "x_kd" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
             {
 				_x_kd = parameter.as_double();
                 RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
             }
-            if (parameter.get_name() == "_x_kff" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            if (parameter.get_name() == "x_kff" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
             {
 				_x_kff = parameter.as_double();
                 RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
             }
-            if (parameter.get_name() == "_w_kp" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            if (parameter.get_name() == "w_kp" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
             {
 				_w_kp = parameter.as_double();
                 RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
             }
-            if (parameter.get_name() == "_w_ki" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            if (parameter.get_name() == "w_ki" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
             {
 				_w_ki = parameter.as_double();
                 RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
             }
-            if (parameter.get_name() == "_w_kd" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            if (parameter.get_name() == "w_kd" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
             {
 				_w_kd = parameter.as_double();
                 RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
             }
-            if (parameter.get_name() == "_w_kff" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
+            if (parameter.get_name() == "w_kff" && parameter.get_type() == rclcpp::ParameterType::PARAMETER_DOUBLE)
             {
 				_w_kff = parameter.as_double();
                 RCLCPP_INFO(this->get_logger(), "Parameter %s changed: %f", parameter.get_name().c_str(), parameter.as_double());
@@ -262,6 +275,9 @@ public:
 		        _actual_vx = (left_speed_mps+right_speed_mps)/2.0f;
 		        _actual_wz = (left_speed_mps-right_speed_mps)/base_width; // approx for small angle
 
+				// reply
+				write();
+
 				// calculate distance, angle 
 		        static float const dt = 0.010; // 10ms UART feedback rate
 		        float dx = _actual_vx*dt;
@@ -296,10 +312,9 @@ public:
 		        // publish odom
 				auto odom_msg = nav_msgs::msg::Odometry();
 				odom_msg.header.frame_id = "odom";
-				odom_msg.child_frame_id = "base_link";
+				odom_msg.child_frame_id = "base_footprint";
 				odom_msg.header.stamp.sec = RCL_NS_TO_S(now);
 				odom_msg.header.stamp.nanosec = now - RCL_S_TO_NS(odom_msg.header.stamp.sec);
-
 				odom_msg.pose.pose.position.x = _x;
 				odom_msg.pose.pose.position.y = _y;
 				odom_msg.pose.pose.position.z = 0.0;
@@ -307,21 +322,23 @@ public:
     			odom_msg.pose.pose.orientation.y = q.y();
     			odom_msg.pose.pose.orientation.z = q.z();
     			odom_msg.pose.pose.orientation.w = q.w();
-
 			    for (unsigned int i = 0; i < odom_msg.pose.covariance.size(); ++i)
 			    {
       				odom_msg.pose.covariance[i] = 0.0;
     			}
-
-			    // Pose covariance (required by robot_pose_ekf) TODO: publish realistic values
-			    // Odometry yaw covariance must be much bigger than the covariance provided
-			    // by the imu, as the later takes much better measures
-			    odom_msg.pose.covariance[0] = 0.1;
-			    odom_msg.pose.covariance[7] = 0.1;
-			    odom_msg.pose.covariance[35] = 0.2;
-			    odom_msg.pose.covariance[14] = 1000.0;  // set a non-zero covariance on unused
-			    odom_msg.pose.covariance[21] = 1000.0;  // dimensions (z, pitch and roll); this
-			    odom_msg.pose.covariance[28] = 1000.0;  // is a requirement of robot_pose_ekf
+			    // Pose covariance (required by robot_pose_ekf)
+				/* pose covariance
+				    x  y  z  R  P  Y
+				 x  0  1  2  3  4  5  
+				 y  6  7  8  9 10 11
+				 z 12 13 14 15 16 17
+				 R 18 19 20 21 22 23
+				 P 24 25 26 27 28 29
+				 Y 30 31 32 33 34 35  
+				*/
+				// Pose covariance unknown = -1
+				odom_msg.pose.covariance[0] = -1.0;
+				// Note : we dont need a covariance matrix because EKF is configured not to use pose (x,y,z,roll,pitch,yaw) from wheel odometry
 
 			    odom_msg.twist.twist.linear.x = _actual_vx;
 			    odom_msg.twist.twist.linear.y = 0.0;
@@ -329,28 +346,41 @@ public:
 			    odom_msg.twist.twist.angular.x = 0.0;
 			    odom_msg.twist.twist.angular.y = 0.0;
 			    odom_msg.twist.twist.angular.z = _actual_wz;
-    			_odom_pub->publish(odom_msg);
+			    for (unsigned int i = 0; i < odom_msg.twist.covariance.size(); ++i)
+			    {
+      				odom_msg.twist.covariance[i] = 0.0;
+    			}
+			    // Twist covariance (required by robot_pose_ekf)
+				/* twist covariance
+				    vx vy vz wx wy wz
+				 vx  0  1  2  3  4  5  
+				 vy  6  7  8  9 10 11
+				 vz 12 13 14 15 16 17
+				 wx 18 19 20 21 22 23
+				 wy 24 25 26 27 28 29
+				 wz 30 31 32 33 34 35  
+				*/
+				odom_msg.twist.covariance[0] = 0.1; // vx variance = 0.1m/s 
+				odom_msg.twist.covariance[35] = 0.05; // wz variance = 0.05rad/s ~3deg/s (must be higher thant IMU so EKF uses IMU)
+				_odom_pub->publish(odom_msg);
 
-			    // Stuff and publish /tf
-				auto odom_tf_msg = geometry_msgs::msg::TransformStamped();
-				odom_tf_msg.header.frame_id = odom_msg.header.frame_id;
-				odom_tf_msg.child_frame_id = odom_msg.child_frame_id;			    
-			    odom_tf_msg.header.stamp = odom_msg.header.stamp;
-			    odom_tf_msg.transform.translation.x = _x;
-			    odom_tf_msg.transform.translation.y = _y;
-			    odom_tf_msg.transform.translation.z = 0.0;
-			    odom_tf_msg.transform.rotation.x = q.x();
-			    odom_tf_msg.transform.rotation.y = q.y();
-			    odom_tf_msg.transform.rotation.z = q.z();
-			    odom_tf_msg.transform.rotation.w = q.w();
-			    _br.sendTransform(odom_tf_msg);
-
-		        // reply
-		        write();
+				// stats
+				++_stat_feedback_count;
+				static int32_t counter = 0;
+				if(++counter%1000==0)
+				{
+					int32_t ellapsed_time = RCL_NS_TO_S(now) - _stat_start_time_s;
+					float packet_error_rate = (float)_stat_feedback_checksum_error/(float)_stat_feedback_count;
+					float frequency = (float)_stat_feedback_count/(float)ellapsed_time;
+					RCLCPP_INFO(this->get_logger(), "PER:%0.3f Freq:%.1f",packet_error_rate,frequency);
+				}
 		    }
 		    else
 		    {
-		        RCLCPP_INFO(this->get_logger(), "Hoverboard checksum mismatch: %d vs %d", msg.checksum, checksum);
+		        //RCLCPP_INFO(this->get_logger(), "Hoverboard checksum mismatch: %d vs %d", msg.checksum, checksum);
+				// stats
+				++_stat_feedback_checksum_error;
+				++_stat_feedback_count;
 		    }
 		    msg_len = 0;
 		}
@@ -424,8 +454,9 @@ private:
 	rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr _cmd_vel_sub;
 	rclcpp::Publisher<nav_msgs::msg::Odometry>::SharedPtr _odom_pub;
 	rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr _speed_setpoint_pub;
-	tf2_ros::TransformBroadcaster _br;
 	OnSetParametersCallbackHandle::SharedPtr _param_cb_ptr;
+
+	rclcpp::TimerBase::SharedPtr _timer;
 
 	void _cmd_vel_callback(const std::shared_ptr<geometry_msgs::msg::Twist> msg) //, const std::string & key)
 	{
@@ -493,19 +524,25 @@ private:
     serial_feedback msg;
     serial_feedback prev_msg;
 
+	// statistics
+	uint32_t _stat_feedback_count = 0;
+	uint32_t _stat_feedback_checksum_error = 0;
+	uint32_t _stat_start_time_s = 0;
+
 };
 
 int main(int argc, char ** argv)
 {
 	rclcpp::init(argc,argv);
 	auto hoverboard_node = std::make_shared<driver_node>();
-	////rclcpp::spin(hoverboard_node);
-	while (rclcpp::ok())
+	rclcpp::spin(hoverboard_node);
+	/*while (rclcpp::ok())
 	{
 		hoverboard_node->read();
 		//hoverboard_node->write();
 		rclcpp::spin_some(hoverboard_node);
-	}  	
+		//rclcpp::spin_once(hoverboard_node);
+	}  	*/
 	rclcpp::shutdown();
 	return 0;
 }
