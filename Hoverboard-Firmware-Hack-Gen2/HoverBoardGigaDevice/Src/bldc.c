@@ -254,8 +254,9 @@ void CalculateBLDC(void)
 		}
 	}
 	// PID controller frequency 100 Hz
+	// TODO we are called @ 64KHz check why
 	// convert realSpeed to rpm
-        if (buzzerTimer % 160 == 0)
+        if (buzzerTimer % 640 == 0)
 	{
 		#ifdef MASTER
 		SetPWM(updatePID((float)speedM, realSpeed / 100., 0.01));
