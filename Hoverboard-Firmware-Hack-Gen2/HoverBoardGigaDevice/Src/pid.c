@@ -12,6 +12,13 @@ int16_t updatePID(const float desired_val, const float measured_val, const float
 	float error;
 	float delta_error;
 	float Dterm;
+
+        // Bypass PID controller if all parameters are set to zero
+	// This makes the use of the PID controller on the hoverboard optional
+        if (Kp == 0 && Ki == 0 && Kp == 0)
+        {
+                return CLAMP((int16_t) desired_val, -1000, 1000);
+        }
 	
 	if (Kp == -1 || Ki == -1 || Kp == -1)
 	{
