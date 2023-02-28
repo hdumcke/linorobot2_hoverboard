@@ -192,7 +192,7 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
     options.c_cc[VMIN] = 0;
 
     // Set baud rate
-    cfsetospeed(&options, B38400);
+    cfsetospeed(&options, B115200);
 
     // Apply options
     result = tcsetattr(fd, TCSANOW, &options);
