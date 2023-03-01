@@ -67,7 +67,8 @@ extern float realSpeed;
 extern float batteryVoltage; 							// global variable for battery voltage
 extern float currentDC; 									// global variable for current dc
 extern int16_t currentDCSlave;
-extern int16_t realSpeedSlave;
+extern int16_t debugSlave;
+extern int16_t debugMaster;
 
 extern uint8_t buzzerFreq;    						// global variable for the buzzer pitch. can be 1, 2, 3, 4, 5, 6, 7...
 extern uint8_t buzzerPattern; 						// global variable for the buzzer pattern. can be 1, 2, 3, 4, 5
@@ -88,17 +89,17 @@ void SendSteerDevice(void)
 		case BAT_U:
 			value = batteryVoltage * 100;
 			break;
-		case MOT_L_I:
+		case MOT_M_I:
 			value = currentDC * 100;
 			break;
-		case MOT_R_I:
+		case MOT_S_I:
 			value = currentDCSlave;
 			break;
-		case MOT_L_V:
-			value = (int16_t)(realSpeed * 100);
+		case MOT_M_D:
+			value = (int16_t)(debugMaster);
 			break;
-		case MOT_R_V:
-			value = (int16_t)(realSpeedSlave);
+		case MOT_S_D:
+			value = (int16_t)(debugSlave);
 			break;	
 		default:
 				break;
@@ -219,10 +220,10 @@ void CheckConfigValue(uint8_t identifier, int16_t value)
 		case PID_D:
 			Kd = (float)value / 100;
 			break;
-		case LED_L:
+		case LED_M:
 			SetRGBProgram(value);
 			break;
-		case BACK_LED_L:
+		case BACK_LED_M:
 			// 0 = Off, 1 = Green, 2 = Red, 3 = Orange
 			switch(value)
 			{
@@ -240,11 +241,11 @@ void CheckConfigValue(uint8_t identifier, int16_t value)
 					EnableLEDPin(0);
 			}
 			break;
-		case LED_R:
+		case LED_S:
 			// Set global variable for slave
 			led_slave = value;
 			break;
-		case BACK_LED_R:
+		case BACK_LED_S:
 			// Set global variable for slave
 			back_led_slave = value;
 			break;

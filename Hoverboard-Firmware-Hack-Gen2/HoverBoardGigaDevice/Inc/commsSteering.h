@@ -37,9 +37,9 @@
 // Only master communicates with steering device
 #ifdef MASTER
 
-enum {PID_P, PID_I, PID_D, LED_L, LED_R, BACK_LED_L, BACK_LED_R, BUZZER};
+enum {PID_P, PID_I, PID_D, LED_S, LED_M, BACK_LED_S, BACK_LED_M, BUZZER};
 
-enum {BAT_U, MOT_L_I, MOT_R_I, MOT_L_V, MOT_R_V};
+enum {BAT_U, MOT_S_I, MOT_M_I, MOT_S_D, MOT_M_D};
 
 //----------------------------------------------------------------------------
 // Update USART steer input

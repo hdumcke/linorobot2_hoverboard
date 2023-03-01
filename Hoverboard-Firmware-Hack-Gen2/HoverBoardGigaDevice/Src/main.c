@@ -49,8 +49,8 @@
 #ifdef MASTER
 int32_t speedM = 0; 												// global variable for master wheel. -1000 to 1000
 int32_t speedS = 0; 												// global variable for slave wheel.    -1000 to 1000
-int32_t encM = 0; 												// global variable for master encoder starting at 0
-int32_t encS = 0; 												// global variable for slave encoder starting at 0
+int32_t encM = 0; 												// global variable for master feedback, this value will be transmitted at 100 Hz
+int32_t encS = 0; 												// global variable for slave feedback, this value will be transmitted at 100 Hz
 FlagStatus activateWeakening = RESET;			// global variable for weakening
 FlagStatus beepsBackwards = RESET;  			// global variable for beeps backwards
 			

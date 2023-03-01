@@ -226,12 +226,6 @@ void CalculateBLDC(void)
   pos = hall_to_pos[hall];
 	inc = increments[lastHall][hall];
 	lastHall = hall;
-	#ifdef SLAVE
-	m_enc += inc;
-	#endif
-	#ifdef MASTER
-	encM += inc;
-	#endif
 	// Measure s
 	// Increments with 62.5us
 	if(loopCounter < 16000 && inc == 0) // Number of loops with no increment gives time
@@ -253,6 +247,12 @@ void CalculateBLDC(void)
 			loopCounter = 0;
 		}
 	}
+	#ifdef SLAVE
+	m_enc = (int32_t)(realSpeed * 100);
+	#endif
+	#ifdef MASTER
+	encM = (int32_t)(realSpeed * 100);
+	#endif
 	// PID controller frequency 100 Hz
 	// TODO we are called @ 64KHz check why
 	// convert realSpeed to rpm

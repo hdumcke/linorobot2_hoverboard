@@ -7,9 +7,9 @@
 
 #define SOCKET_NAME "/tmp/hoverboard-proxy.socket"
 
-enum {PID_P, PID_I, PID_D, LED_L, LED_R, BACK_LED_L, BACK_LED_R, BUZZER};
+enum {PID_P, PID_I, PID_D, LED_S, LED_M, BACK_LED_S, BACK_LED_M, BUZZER};
 
-enum {BAT_U, MOT_L_I, MOT_R_I, MOT_L_V, MOT_R_V};
+enum {BAT_U, MOT_S_I, MOT_M_I, MOT_S_D, MOT_M_D};
 
 // types
 typedef char s8;
@@ -24,8 +24,8 @@ typedef long s32;
 // frame parameters format for control instruction
 struct parameters_control_instruction_format
 {
-    s16 leftSpeed;
     s16 rightSpeed;
+    s16 leftSpeed;
     s16 pid_p;
     s16 pid_i;
     s16 pid_d;
@@ -40,13 +40,13 @@ struct parameters_control_instruction_format
 struct parameters_control_acknowledge_format
 {
     u16 responseId;
-    s32 encM;
-    s32 encS;
+    s32 speedMaster;
+    s32 speedSlave;
     s16 battery;
     s16 currentMaster;
-    s16 speedMaster;
+    s16 debugMaster;
     s16 currentSlave;
-    s16 speedSlave;
+    s16 debugSlave;
 };
 
 #define INST_SETSPEED 0x01
@@ -54,10 +54,10 @@ struct parameters_control_acknowledge_format
 #define INST_SETLED 0x03
 #define INST_SETBACK_LED 0x04
 #define INST_SETBUZZER 0x05
-#define INST_GETENC 0x06
+#define INST_GETSPEED 0x06
 #define INST_GETBATT 0x07
 #define INST_GETCURR 0x08
-#define INST_GETSPEED 0x09
+#define INST_GETDEBUG 0x09
 #define INST_GETCB 0x0A
 
 #endif //_esp32_proxy__H

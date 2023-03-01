@@ -1,5 +1,8 @@
 #include "../Inc/pid.h"
 
+int16_t debugSlave;
+int16_t debugMaster;
+
 float last_error = 0;
 float Kp = -1; // Proportial
 float Ki = -1; // Integral
@@ -26,6 +29,12 @@ int16_t updatePID(const float desired_val, const float measured_val, const float
 		return 0;
 	}
 	error = desired_val - measured_val;
+	#ifdef SLAVE
+	debugSlave = (int16_t)(error * 100);
+	#endif
+	#ifdef MASTER
+	debugMaster = (int16_t)(error * 100);
+	#endif
 	delta_error = error - last_error;
 	Iterm += error * dt;
 	

@@ -233,10 +233,11 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
             0x2F,               // header '/'
         };
 
-	tx_buffer[1] = (control_block->control.leftSpeed >> 8) & 0xFF;
-	tx_buffer[2] = control_block->control.leftSpeed & 0xFF;
-	tx_buffer[3] = (control_block->control.rightSpeed >> 8) & 0xFF;
-	tx_buffer[4] = control_block->control.rightSpeed & 0xFF;
+	int direction = -1;
+	tx_buffer[1] = ((control_block->control.leftSpeed * direction) >> 8) & 0xFF;
+	tx_buffer[2] = (control_block->control.leftSpeed * direction) & 0xFF;
+	tx_buffer[3] = ((control_block->control.rightSpeed * direction) >> 8) & 0xFF;
+	tx_buffer[4] = (control_block->control.rightSpeed * direction) & 0xFF;
 	tx_buffer[5] = sendSteerIdentifier;
 	switch(sendSteerIdentifier)
         {
@@ -252,19 +253,19 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
 		tx_buffer[6] = (control_block->control.pid_d >> 8) & 0xFF;
                 tx_buffer[7] = control_block->control.pid_d & 0xFF;
 		break;
-	    case LED_L:
+	    case LED_S:
 		tx_buffer[6] = (control_block->control.led_l >> 8) & 0xFF;
                 tx_buffer[7] = control_block->control.led_l & 0xFF;
 		break;
-	    case LED_R:
+	    case LED_M:
 		tx_buffer[6] = (control_block->control.led_r >> 8) & 0xFF;
                 tx_buffer[7] = control_block->control.led_r & 0xFF;
 		break;
-	    case BACK_LED_L:
+	    case BACK_LED_S:
 		tx_buffer[6] = (control_block->control.back_led_l >> 8) & 0xFF;
                 tx_buffer[7] = control_block->control.back_led_l & 0xFF;
 		break;
-	    case BACK_LED_R:
+	    case BACK_LED_M:
 		tx_buffer[6] = (control_block->control.back_led_r >> 8) & 0xFF;
                 tx_buffer[7] = control_block->control.back_led_r & 0xFF;
 		break;
@@ -409,44 +410,43 @@ void hoverboard_protocol(setpoint_and_feedback_data * control_block)
         // decode parameters
         u8 recSteerIdentifier;
         control_block->feedback.responseId += 1;
-        control_block->feedback.encM = big2little32(rx_buffer, 1);
-        control_block->feedback.encS = big2little32(rx_buffer, 5);
+        control_block->feedback.speedMaster = big2little32(rx_buffer, 1);
+        control_block->feedback.speedSlave = big2little32(rx_buffer, 5);
+	control_block->feedback.speedMaster *= -1;
 	recSteerIdentifier = rx_buffer[9];
 	switch(recSteerIdentifier)
        	{
               case BAT_U:
                   control_block->feedback.battery = big2little16(rx_buffer, 10);
                   break;
-              case MOT_R_I:
+              case MOT_S_I:
                   control_block->feedback.currentSlave = big2little16(rx_buffer, 10);
                   break;
-              case MOT_L_I:
+              case MOT_M_I:
                   control_block->feedback.currentMaster = big2little16(rx_buffer, 10);
                   break;
-              case MOT_R_V:
-                  control_block->feedback.speedSlave = big2little16(rx_buffer, 10);
+              case MOT_S_D:
+                  control_block->feedback.debugSlave = big2little16(rx_buffer, 10);
                   break;
-              case MOT_L_V:
-                  control_block->feedback.speedMaster = big2little16(rx_buffer, 10);
+              case MOT_M_D:
+                  control_block->feedback.debugMaster = big2little16(rx_buffer, 10);
                   break;
               default:
                   break;
 	}
-	// correct direction
-	// control_block->feedback.encM *= -1;
 
         // log
         if (print_debug)
         {
 	    hexDump("control_block", (void *)control_block, sizeof(parameters_control_instruction_format) + sizeof(parameters_control_acknowledge_format));
             printf("responseId: %hu\n", control_block->feedback.responseId);
-            printf("encM: %lu\n", control_block->feedback.encM);
-            printf("encS: %lu\n", control_block->feedback.encS);
+            printf("encM: %lu\n", control_block->feedback.speedMaster);
+            printf("encS: %lu\n", control_block->feedback.speedSlave);
             printf("battery: %u\n", control_block->feedback.battery);
             printf("currentMaster: %u\n", control_block->feedback.currentMaster);
-            printf("speedMaster: %u\n", control_block->feedback.speedMaster);
+            printf("debugMaster: %u\n", control_block->feedback.debugMaster);
             printf("currentSlave: %u\n", control_block->feedback.currentSlave);
-            printf("speedSlave: %u\n", control_block->feedback.speedSlave);
+            printf("debugSlave: %u\n", control_block->feedback.debugSlave);
 	}
 
 
@@ -585,9 +585,9 @@ int main(int argc, char *argv[])
 
                 offset += sizeof(s16);
 		offset += 2; // skip responseId
-                if(r_buffer[1] == INST_GETENC && r_buffer[0] == 2) {
+                if(r_buffer[1] == INST_GETSPEED && r_buffer[0] == 2) {
                     s_buffer[0]= 2 + 16;
-                    s_buffer[1]= INST_GETENC;
+                    s_buffer[1]= INST_GETSPEED;
                     memcpy(&s_buffer[2], (char*)control_block + offset, 16);
                 }
 
@@ -607,9 +607,9 @@ int main(int argc, char *argv[])
                 }
 
 		offset += sizeof(s16);
-                if(r_buffer[1] == INST_GETSPEED && r_buffer[0] == 2) {
+                if(r_buffer[1] == INST_GETDEBUG && r_buffer[0] == 2) {
                     s_buffer[0]= 2 + 2*sizeof(s16);
-                    s_buffer[1]= INST_GETSPEED;
+                    s_buffer[1]= INST_GETDEBUG;
                     memcpy(&s_buffer[2], (char*)control_block + offset, sizeof(16));
                     memcpy(&s_buffer[4], (char*)control_block + offset + 2*sizeof(s16), sizeof(s16));
                 }

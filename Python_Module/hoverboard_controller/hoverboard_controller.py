@@ -109,7 +109,7 @@ class HoverboardInterface:
             self.close()
             return
 
-    def get_enc(self):
+    def get_speed(self):
         try:
             self.sock.sendall(pack("BB", 2, 6))
             data = self.sock.recv(18)
@@ -170,7 +170,7 @@ class HoverboardInterface:
         current = list(unpack("<2h", data[2:]))
         return current
 
-    def get_speed(self):
+    def get_debug(self):
         try:
             self.sock.sendall(pack("BB", 2, 9))
             data = self.sock.recv(6)
@@ -209,6 +209,6 @@ class HoverboardInterface:
 
         cb = {}
         (cb['set_speed_left'], cb['set_speed_right'], cb['pid_p'], cb['pid_i'], cb['pid_d'], cb['led_l'], cb['led_r'],
-         cb['back_led_l'], cb['back_led_r'], cb['buzzer'], cb['responseId'], cb['encM'],  cb['encS'], cb['battery'],
-         cb['currentMaster'],  cb['speedMaster'], cb['currentSlave'], cb['speedSlave']) = unpack("<10hHi4xi4x5h", data[2:])
+         cb['back_led_l'], cb['back_led_r'], cb['buzzer'], cb['responseId'], cb['speedMaster'],  cb['speedSlave'], cb['battery'],
+         cb['currentMaster'],  cb['debugMaster'], cb['currentSlave'], cb['debugSlave']) = unpack("<10hHi4xi4x5h", data[2:])
         return cb

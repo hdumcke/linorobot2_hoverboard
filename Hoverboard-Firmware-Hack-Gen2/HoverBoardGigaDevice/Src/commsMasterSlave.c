@@ -41,6 +41,7 @@
 #include "string.h"
 #include "../Inc/pid.h"
 
+extern int16_t debugSlave;
 #ifdef MASTER
 #define USART_MASTERSLAVE_TX_BYTES 10  // Transmit byte count including start '/' and stop character '\n'
 #define USART_MASTERSLAVE_RX_BYTES 13   // Receive byte count including start '/' and stop character '\n'
@@ -50,7 +51,6 @@ extern FlagStatus beepsBackwards;
 extern int32_t encS;
 extern int32_t encM;
 int16_t currentDCSlave;
-int16_t realSpeedSlave;
 
 #endif
 #ifdef SLAVE
@@ -165,7 +165,7 @@ void CheckUSARTMasterSlaveInput(uint8_t USARTBuffer[])
 	// Save encS
 	encS = (int32_t)((USARTBuffer[2] << 24) | (USARTBuffer[3] << 16) | (USARTBuffer[4] << 8) | USARTBuffer[5]);
 	currentDCSlave = (USARTBuffer[6] << 8) | USARTBuffer[7];
-	realSpeedSlave = (USARTBuffer[8] << 8) | USARTBuffer[9];
+	debugSlave = (USARTBuffer[8] << 8) | USARTBuffer[9];
 	// Calculate setvalues for LED and mosfets
 	byte = USARTBuffer[1];
 	//none = (byte & BIT(7)) ? SET : RESET;
@@ -289,7 +289,6 @@ void SendMaster(FlagStatus upperLEDMaster, FlagStatus lowerLEDMaster, FlagStatus
 	uint8_t index = 0;
 	uint16_t crc = 0;
 	uint8_t buffer[USART_MASTERSLAVE_TX_BYTES];
-	int16_t realSpeed_int;
 	int16_t currentDC_int;
 	uint8_t sendByte = 0;
 	sendByte |= (0 << 7);
@@ -312,9 +311,8 @@ void SendMaster(FlagStatus upperLEDMaster, FlagStatus lowerLEDMaster, FlagStatus
 	currentDC_int = (int16_t) (currentDC * 100);
 	buffer[index++] = (currentDC_int >> 8) & 0xFF;
 	buffer[index++] =  currentDC_int & 0xFF;
-	realSpeed_int = (int16_t) realSpeed * 100;
-	buffer[index++] = (realSpeed_int >> 8) & 0xFF;
-	buffer[index++] =  realSpeed_int & 0xFF;
+	buffer[index++] = (debugSlave >> 8) & 0xFF;
+	buffer[index++] =  debugSlave & 0xFF;
 	// Calculate CRC
   crc = CalcCRC(buffer, index);
   buffer[index++] = (crc >> 8) & 0xFF;
