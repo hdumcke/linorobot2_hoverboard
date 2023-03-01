@@ -259,10 +259,10 @@ void CalculateBLDC(void)
         if (buzzerTimer % 640 == 0)
 	{
 		#ifdef MASTER
-		SetPWM(updatePID((float)speedM, realSpeed / 100., 0.01));
+		SetPWM(updatePID((float)speedM, realSpeed, 0.01));
 		#endif
 		#ifdef SLAVE
-		SetPWM(updatePID((float)desiredSpeedSlave, realSpeed / 100., 0.01));
+		SetPWM(updatePID((float)desiredSpeedSlave, realSpeed, 0.01));
 		#endif
 	}
 	// Calculate low-pass filter for pwm value
