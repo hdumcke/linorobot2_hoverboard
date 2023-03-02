@@ -8,4 +8,4 @@ if len(sys.argv) != 4:
     sys.exit(1)
 
 ct = HoverboardInterface()
-ct.set_pid(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[1]))
+ct.set_pid(int(sys.argv[1]), int(sys.argv[2]), int(sys.argv[3]))
