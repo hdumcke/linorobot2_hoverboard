@@ -16,7 +16,7 @@ git clone -b ros2 https://github.com/linorobot/ldlidar.git src/ldlidar
 rosdep update && rosdep install --from-path src --ignore-src -y --skip-keys microxrcedds_agent --skip-keys micro_ros_agent
 colcon build
 
-sudo apt-get -y install ros-humble-teleop-twist-keyboard
+sudo apt-get -y install ros-humble-teleop-twist-keyboard ros-humble-plotjuggler-ros ros-humble-plotjuggler
 
 ### install Oak-D
 echo 'SUBSYSTEM=="usb", ATTRS{idVendor}=="03e7", MODE="0666"' | sudo tee /etc/udev/rules.d/80-movidius.rules
