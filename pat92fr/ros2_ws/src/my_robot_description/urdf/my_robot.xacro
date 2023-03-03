@@ -38,10 +38,16 @@
   <xacro:property name="camera_length" value="0.026" />
   <xacro:property name="camera_height" value="0.029" />
 
-  <xacro:macro name="cylinder_inertia" params="m r h">
+  <xacro:macro name="cylinder_inertia_z" params="m r h">
     <inertia  ixx="${m*(3*r*r+h*h)/12}" ixy = "0" ixz = "0"
               iyy="${m*(3*r*r+h*h)/12}" iyz = "0"
               izz="${m*r*r/2}" /> 
+  </xacro:macro>
+
+  <xacro:macro name="cylinder_inertia_y" params="m r h">
+    <inertia  ixx="${m*(3*r*r+h*h)/12}" ixy = "0" ixz = "0"
+              iyy="${m*r*r/2}" iyz = "0"
+              izz="${m*(3*r*r+h*h)/12}" /> 
   </xacro:macro>
 
 	<material name="white">
@@ -66,7 +72,7 @@
     <origin xyz="${-wheel_x_offset} 0 ${wheel_radius-wheel_z_offset+base_height/2.}" rpy="0 0 0"/>
   </joint>
 
-  <!-- ********************** ROBOT BASE LINK *********************************  -->
+  <!-- ********************** ROBOT CASE *********************************  -->
 
   <link name="case">
     <collision>
@@ -122,9 +128,9 @@
       </visual>
 
       <inertial>
-        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <mass value="${wheel_mass}"/>
-        <xacro:cylinder_inertia  m="${wheel_mass}" r="${wheel_radius}" h="${wheel_len}" />
+        <xacro:cylinder_inertia_y  m="${wheel_mass}" r="${wheel_radius}" h="${wheel_len}" />
       </inertial>
     </link>
 
@@ -154,9 +160,9 @@
       </visual>
 
       <inertial>
-        <origin xyz="0 0 0" rpy="${PI/2} 0 0"/>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <mass value="${wheel_mass}"/>
-        <xacro:cylinder_inertia  m="${wheel_mass}" r="${wheel_radius}" h="${wheel_len}" />
+        <xacro:cylinder_inertia_y  m="${wheel_mass}" r="${wheel_radius}" h="${wheel_len}" />
       </inertial>
     </link>
 
@@ -301,5 +307,15 @@
         izz="${camera_mass / 12.0 * (camera_width*camera_width + camera_length*camera_length)}"/>
     </inertial>    
   </link>
+
+  <joint name="camera_optical_joint" type="fixed">
+    <origin xyz=" 0 0 0" rpy="${-PI/2} 0 ${-PI/2}"/>
+    <parent link="camera"/>
+    <child link="camera_optical"/>
+  </joint>
+
+  <link name="camera_optical"/>
+
+
 
 </robot>
