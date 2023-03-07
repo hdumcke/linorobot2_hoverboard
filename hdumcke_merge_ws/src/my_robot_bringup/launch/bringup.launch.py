@@ -68,8 +68,8 @@ def generate_launch_description():
 			),  
 					
 			launch_ros.actions.Node(
-				package='joy', 
-				executable='joy_node', 
+				package='joy_linux', 
+				executable='joy_linux_node', 
 				name='joy_node',
 				parameters=[joy_config_filepath]
 			),
@@ -86,7 +86,8 @@ def generate_launch_description():
 				executable='ekf_node',
 				name='ekf_filter_node',
 				output='screen',
-				parameters=[robot_localization_config_filepath]
+				parameters=[robot_localization_config_filepath],
+                remappings=[("imu", "imu/raw_data")]
 			),
             
     		launch_ros.actions.Node(

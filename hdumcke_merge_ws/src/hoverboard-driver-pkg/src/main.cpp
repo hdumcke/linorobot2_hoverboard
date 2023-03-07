@@ -221,8 +221,13 @@ public:
 
 		    	float voltage_V = (double)control_block.feedback.battery/100.0;
 		    	float temperature_C = 0.0;
-			float left_speed_rpm = -(double)control_block.feedback.speedSlave/100.0;
-			float right_speed_rpm = (double)control_block.feedback.speedMaster/100.0;
+			int temp0 = 0;
+			int temp1 = 0;
+                        memcpy((char*)&temp0, &recv_msg[24], 4);
+                        memcpy((char*)&temp1, &recv_msg[32], 4);
+			
+			float left_speed_rpm = (float)temp1/100.0f;
+			float right_speed_rpm = (float)temp0/100.0f;
 
 				if(false)
 			        RCLCPP_INFO(this->get_logger(), 
@@ -247,9 +252,9 @@ public:
 			        );
 
 				// calculate velocities
-		        static float const base_width = 0.560f; 
+		        static float const base_width = 0.365f; 
 		        _actual_vx = (left_speed_mps+right_speed_mps)/2.0f;
-		        _actual_wz = (left_speed_mps-right_speed_mps)/base_width; // approx for small angle
+		        _actual_wz = -(left_speed_mps-right_speed_mps)/base_width; // approx for small angle
 
 				// reply
 				write();
@@ -401,8 +406,8 @@ public:
 		int data_len = 0;
                 char recv_msg[s_recv_len];
                 char send_msg[s_send_len];
-		leftSpeed = std::clamp( (int16_t)(-x_speed-w_speed), (int16_t)-_pwm_max, (int16_t)_pwm_max);
-		rightSpeed = std::clamp( (int16_t)(-x_speed+w_speed), (int16_t)-_pwm_max, (int16_t)_pwm_max);
+		leftSpeed = std::clamp( (int16_t)(x_speed+w_speed), (int16_t)-_pwm_max, (int16_t)_pwm_max);
+		rightSpeed = std::clamp( (int16_t)(x_speed-w_speed), (int16_t)-_pwm_max, (int16_t)_pwm_max);
 		send_msg[0] = 6;
                 send_msg[1] = INST_SETSPEED;
                 memcpy(&send_msg[2], &rightSpeed, sizeof(rightSpeed));
