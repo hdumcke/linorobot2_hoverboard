@@ -1,0 +1,3 @@
+horo-test:
+  bash:
+    - ~/hdumcke_merge_ws/sc/horo-stop_gazebo.sh
