@@ -4,6 +4,7 @@ horo-test:
     - ros2 launch horo_gazebo gazebo.launch.py
   map:
     - source ~/hdumcke_merge_ws/install/setup.bash
-    - ros2 launch horo_navigation navigation.launch.py map:=~/hdumcke_merge_ws/src/horo_navigation/maps/my_map.yaml sim:=true rviz:=true
+    #- ros2 launch horo_navigation navigation.launch.py sim:=true rviz:=true
+    - ros2 launch horo_navigation navigation.launch.py sim:=true rviz:=true map:=/home/hdumcke/hdumcke_merge_ws/src/horo_navigation/maps/my_map.yaml
   nav2:
     - ros2 launch nav2_bringup navigation_launch.py use_sim_time:=true
