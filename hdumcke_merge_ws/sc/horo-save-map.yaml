@@ -1,0 +1,4 @@
+horo-test:
+  bash:
+    - cd ~/hdumcke_merge_ws/src/horo_navigation/maps/
+    - ros2 run nav2_map_server map_saver_cli -f my_map --ros-args -p save_map_timeout:=10000.
