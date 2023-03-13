@@ -45,7 +45,12 @@ sudo pip install $BASEDIR/Python_Module
 
 sudo apt install -y python3-rosdep2
 sudo apt install -y ros-humble-ros2-control
-sudo apt install -y ros-humble-ros2-controllers
+sudo apt install -y ros-humble-ros2-controllers ros-humble-slam-toolbox
+sudo apt install -y ros-humble-navigation2
+sudo apt install -y ros-humble-nav2-bringup
+sudo apt install -y ros-humble-robot-localization
+sudo apt install -y ros-humble-rmw-cyclonedds-cpp
+echo 'export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp' >> ~/.bashrc
 source /opt/ros/humble/setup.bash
 mkdir -p ~/horo_ws/src
 cd ~/horo_ws
@@ -81,7 +86,15 @@ sudo cp $BASEDIR/imu/imu.sh /var/lib/horo/
 sudo systemctl enable imu
 $BASEDIR/imu/ros_install.sh
 
+# udev rule for lidar
+sudo cp ~/horo_ws/src/ldlidar/ldlidar.rules /etc/udev/rules.d/
+
 # install Python modules
 sudo pip install simple-pid
+
+### install screen-commander
+sudo apt install -y screen
+pip install git+https://github.com/hdumcke/screen-commander@main#egg=screen-commander
+echo 'export PATH=~/.local/bin:$PATH' >> ~/.bashrc
 
 sudo reboot

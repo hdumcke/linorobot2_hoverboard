@@ -34,7 +34,7 @@ def generate_launch_description():
     )
 
     rviz_config_path = PathJoinSubstitution(
-        [FindPackageShare('horo_navigation'), 'rviz', 'linorobot2_slam.rviz']
+        [FindPackageShare('horo_navigation'), 'rviz', 'horo_slam.rviz']
     )
     
     lc = LaunchContext()

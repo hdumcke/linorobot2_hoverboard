@@ -1,0 +1,8 @@
+horo-test:
+  teleop:
+    - ros2 run teleop_twist_keyboard teleop_twist_keyboard
+  slam:
+    - source ~/hdumcke_merge_ws/install/setup.bash
+    - ros2 launch horo_navigation slam.launch.py
+  nav2:
+    - ros2 launch nav2_bringup navigation_launch.py
