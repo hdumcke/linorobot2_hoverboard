@@ -226,8 +226,8 @@ public:
                         memcpy((char*)&temp0, &recv_msg[24], 4);
                         memcpy((char*)&temp1, &recv_msg[32], 4);
 			
-			float left_speed_rpm = (float)temp1/100.0f;
-			float right_speed_rpm = (float)temp0/100.0f;
+			float left_speed_rpm = (float)temp1/100.0f*2.6;
+			float right_speed_rpm = (float)temp0/100.0f*2.6;
 
 				if(false)
 			        RCLCPP_INFO(this->get_logger(), 
@@ -353,7 +353,7 @@ public:
 					int32_t ellapsed_time = RCL_NS_TO_S(now) - _stat_start_time_s;
 					float packet_error_rate = (float)_stat_feedback_checksum_error/(float)_stat_feedback_count;
 					float frequency = (float)_stat_feedback_count/(float)ellapsed_time;
-					RCLCPP_INFO(this->get_logger(), "PER:%0.3f Freq:%.1f",packet_error_rate,frequency);
+					//RCLCPP_INFO(this->get_logger(), "PER:%0.3f Freq:%.1f",packet_error_rate,frequency);
 				}
 	}
 
