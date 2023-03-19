@@ -226,8 +226,8 @@ public:
                         memcpy((char*)&temp0, &recv_msg[24], 4);
                         memcpy((char*)&temp1, &recv_msg[32], 4);
 			
-			float left_speed_rpm = (float)temp1/100.0f*2.6;
-			float right_speed_rpm = (float)temp0/100.0f*2.6;
+			float left_speed_rpm = (float)temp1/100.0f*2.6f;
+			float right_speed_rpm = (float)temp0/100.0f*2.6f;
 
 				if(false)
 			        RCLCPP_INFO(this->get_logger(), 
